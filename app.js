@@ -1,8 +1,31 @@
 const express = require("express")
-
 const sequelize = require('./util/database')
+require('dotenv').config();
 
+const bodyParser = require('body-parser')
 const app = express()
+
+
+app.use(bodyParser.urlencoded({ extended: false }))
+
+
+app.use(bodyParser.json())
+//app.use(express.urlencoded({extended: true}))
+const cors = require('cors')
+
+
+const corsOption = {
+    origin: "*"
+};
+
+app.use(cors(corsOption))
+
+
+
+const userRouter = require('./routes/user-routes')
+app.use('/api/users', userRouter)
+
+
 const Comment = require('./models/comment')
 const Event = require('./models/event')
 const EventImage = require('./models/eventImage')
@@ -32,13 +55,18 @@ User.hasMany(Ticket, {as: 'assignedTickets'});
 Ticket.belongsTo(User, {foreignKey: 'client_id', constraints: true, onDelete: 'CASCADE'});
 Ticket.belongsTo(User, {foreignKey: 'support_id', constraints: true, onDelete: 'CASCADE'});
 
-User.belongsToMany(Event,{through: Invitation});
-Event.belongsToMany(User,{through: Invitation});
+User.belongsToMany(Event, {through: Invitation});
+Event.belongsToMany(User, {through: Invitation});
 
 app.get('/', (req, res) => {
     res.send("hello2")
 })
 
-app.listen(3000, () => {
+// console.log("DATABASE_NAME ", process.env.DATABASE_NAME)
+// console.log("USERNAME_DB ", process.env.USERNAME_DB)
+// console.log("ROOT ", process.env.ROOT)
+// console.log("PORT ", process.env.PORT)
+// console.log("TEST ", process.env.TEST)
+app.listen(process.env.PORT, () => {
     console.log("milana")
 })

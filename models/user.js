@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../util/database');
-const Event=require('./event')
+const Event = require('./event')
 
 const User = sequelize.define("User", {
     id: {
@@ -29,7 +29,11 @@ const User = sequelize.define("User", {
         allowNull: false,
     },
     password: {
-        type: Sequelize.STRING,
+        type: Sequelize.STRING(255),
+        allowNull: false,
+    },
+    phoneNumber: {
+        type: Sequelize.STRING(45),
         allowNull: false,
     },
     role: {
@@ -44,6 +48,8 @@ const User = sequelize.define("User", {
         type: Sequelize.STRING(1024),
         allowNull: true,
     }
+}, {
+    tableName: 'User',
 });
 
 module.exports = User;
