@@ -11,16 +11,18 @@ const locationRouter = require('./routes/location-routes')
 const eventTypeRouter = require('./routes/eventType-routes')
 const eventImageRouter = require('./routes/eventImage-routes')
 const eventRouter = require('./routes/event-routes')
+const commentRouter = require('./routes/comment-routes')
 
 
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
 app.use(cors(corsOption))
-app.use('/api/users', userRouter)
-app.use('/api/locations', locationRouter);
-app.use('/api/eventTypes', eventTypeRouter)
-app.use('/api/eventImages', eventImageRouter);
+app.use('/api/comments', commentRouter)
 app.use('/api/events', eventRouter)
+app.use('/api/eventImages', eventImageRouter);
+app.use('/api/eventTypes', eventTypeRouter)
+app.use('/api/locations', locationRouter);
+app.use('/api/users', userRouter)
 
 app.get('/', (req, res) => {
     res.send("hello2")

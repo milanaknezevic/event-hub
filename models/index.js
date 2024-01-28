@@ -20,13 +20,11 @@ Event.belongsTo(User, {foreignKey: 'creator_id', constraints: true, onDelete: 'C
 Event.belongsTo(EventType, {foreignKey: 'eventType_id', constraints: true, onDelete: 'CASCADE'});
 Event.belongsTo(Location, {foreignKey: 'location_id', constraints: true, onDelete: 'CASCADE'});
 
-Event.hasMany(Comment, {as: 'comments'});
-User.hasMany(Comment, {as: 'comments'});
-Comment.belongsTo(Event, {foreignKey: 'event_id', constraints: true, onDelete: 'CASCADE'});
-Comment.belongsTo(User, {foreignKey: 'user_id', constraints: true, onDelete: 'CASCADE'});
+Event.hasMany(Comment, {as: 'eventComments', foreignKey: 'event_id'});
+Comment.belongsTo(Event, {foreignKey: 'event_id', as: 'eventComments', constraints: true, onDelete: 'CASCADE'});
 
-// Event.hasMany(EventImage, {as: 'eventImages'});
-// EventImage.belongsTo(Event, {foreignKey: 'event_id', constraints: true, onDelete: 'CASCADE'});
+User.hasMany(Comment, {as: 'userComments', foreignKey: 'user_id'});
+Comment.belongsTo(User, {foreignKey: 'user_id', as: 'userComments', constraints: true, onDelete: 'CASCADE'});
 
 Event.hasMany(EventImage, {as: 'eventImages', foreignKey: 'event_id'});
 EventImage.belongsTo(Event, {foreignKey: 'event_id', as: 'eventImages', constraints: true, onDelete: 'CASCADE'});

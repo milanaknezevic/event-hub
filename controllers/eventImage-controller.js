@@ -4,7 +4,7 @@ const addEventImage = async (req, res) => {
     try {
         const eventImageData = {
             image: req.body.image,
-            event_id:req.body.event_id
+            event_id: req.body.event_id
         };
         const newEventImage = await EventImage.create(eventImageData);
         res.status(201).json({
@@ -24,7 +24,6 @@ const getAllEventImages = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
-
 
 module.exports = {
     addEventImage,

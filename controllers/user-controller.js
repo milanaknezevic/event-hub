@@ -1,4 +1,7 @@
 const User = require("../models/user");
+const Location = require("../models/location");
+const Event = require("../models/event");
+const EventImage = require("../models/eventImage");
 
 const addUser = async (req, res) => {
     try {
@@ -54,7 +57,7 @@ const deleteUser = async (req, res) => {
     try {
         let id = req.params.id
         await User.destroy({where: {id: id}})
-        res.status(200).send('Product is deleted!')
+        res.status(200).send('User is deleted!')
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -77,11 +80,33 @@ const updateUser = async (req, res) => {
     }
 };
 
+const getAllEventsByCreatorId = async (req, res) => {
+    try {
+        let creatorId = req.params.creatorId;
+        const creator = await User.findByPk(creatorId);
+
+        if (!creator) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        const events =await Event.findAll({
+            where: { creator_id: creatorId },
+        });
+
+
+        return res.status(200).json({ success: true, events: events });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+};
+
 
 module.exports = {
     getAllUsers,
     addUser,
     updateAllPropertiesUser,
+    getAllEventsByCreatorId,
     updateUser,
     deleteUser,
     getUserById,

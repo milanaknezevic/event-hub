@@ -18,8 +18,12 @@ const Comment = sequelize.define("Comment", {
     },
     mark: {
         type: Sequelize.SMALLINT,
-        allowNull: false,
+        allowNull: true,
     },
+    creationDate: {
+        type: Sequelize.DATE,
+        allowNull: false,
+    }
 }, {
     tableName: 'Comment',
 });
