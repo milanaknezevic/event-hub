@@ -1,4 +1,4 @@
-const {Sequelize,DataType} = require('sequelize');
+const {Sequelize} = require('sequelize');
 
 const sequelize = new Sequelize('event_hub_db', 'postgres', 'milana123', {
     host: 'localhost',
@@ -9,8 +9,7 @@ const sequelize = new Sequelize('event_hub_db', 'postgres', 'milana123', {
 });
 
 try {
-     sequelize.authenticate();
-    console.log('Connection has been established successfully.');
+    sequelize.authenticate();
 } catch (error) {
     console.error('Unable to connect to the database:', error);
 }

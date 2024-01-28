@@ -28,7 +28,8 @@ const Ticket = sequelize.define("Ticket", {
         type: Sequelize.DATE,
         allowNull: false,
     },
-
+}, {
+    tableName: 'Ticket',
 });
 
 module.exports = Ticket;

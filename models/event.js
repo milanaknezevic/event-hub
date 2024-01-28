@@ -26,9 +26,8 @@ const Event = sequelize.define("Event", {
         type: Sequelize.DATE,
         allowNull: false,
     },
+}, {
+    tableName: 'Event',
 });
-
-// Event.belongsTo(User, {foreignKey:'creator_id' ,constraints: true, onDelete: 'CASCADE'});
-
 
 module.exports = Event;

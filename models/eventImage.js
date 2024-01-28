@@ -11,7 +11,9 @@ const EventImage = sequelize.define("EventImage", {
     image: {
         type: Sequelize.STRING(1024),
         allowNull: false,
-    }
+    },
+}, {
+    tableName: 'EventImage',
 });
 
 module.exports = EventImage;

@@ -12,6 +12,8 @@ const EventType = sequelize.define("EventType", {
         type: Sequelize.STRING(45),
         allowNull: false,
     },
+}, {
+    tableName: 'EventType',
 });
 
 module.exports = EventType;

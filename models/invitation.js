@@ -16,7 +16,8 @@ const Invitation = sequelize.define("Invitation", {
         type: Sequelize.BOOLEAN,
         allowNull: false,
     },
-
+}, {
+    tableName: 'Invitation',
 });
 
 module.exports = Invitation;

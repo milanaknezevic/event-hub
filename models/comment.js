@@ -19,7 +19,8 @@ const Comment = sequelize.define("Comment", {
     mark: {
         type: Sequelize.SMALLINT,
         allowNull: false,
-    }
+    },
+}, {
+    tableName: 'Comment',
 });
-
 module.exports = Comment;

@@ -12,6 +12,8 @@ const Location = sequelize.define("Location", {
         type: Sequelize.STRING(255),
         allowNull: false,
     },
+}, {
+    tableName: 'Location',
 });
 
 module.exports = Location;
