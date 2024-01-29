@@ -7,12 +7,6 @@ const Location = require('./location')
 const Ticket = require('./ticket')
 const User = require('./user')
 
-// User.hasMany(Event, {as: 'events'});
-// EventType.hasMany(Event, {as: 'events'})
-// Location.hasMany(Event, {as: 'events'})
-// Event.belongsTo(User, {foreignKey: 'creator_id', constraints: true, onDelete: 'CASCADE'});
-// Event.belongsTo(EventType, {foreignKey: 'eventType_id', constraints: true, onDelete: 'CASCADE'});
-// Event.belongsTo(Location, {foreignKey: 'location_id', constraints: true, onDelete: 'CASCADE'});
 User.hasMany(Event, {as: 'events', foreignKey: 'creator_id'});
 EventType.hasMany(Event, {as: 'events', foreignKey: 'eventType_id'})
 Location.hasMany(Event, {as: 'events', foreignKey: 'location_id'})

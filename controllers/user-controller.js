@@ -2,6 +2,7 @@ const User = require("../models/user");
 const Location = require("../models/location");
 const Event = require("../models/event");
 const EventImage = require("../models/eventImage");
+const {Sequelize} = require("sequelize");
 
 const addUser = async (req, res) => {
     try {
@@ -86,27 +87,76 @@ const getAllEventsByCreatorId = async (req, res) => {
         const creator = await User.findByPk(creatorId);
 
         if (!creator) {
-            return res.status(404).json({ error: 'User not found.' });
+            return res.status(404).json({error: 'User not found.'});
         }
 
-        const events =await Event.findAll({
-            where: { creator_id: creatorId },
+        const events = await Event.findAll({
+            where: {creator_id: creatorId},
         });
 
 
-        return res.status(200).json({ success: true, events: events });
+        return res.status(200).json({success: true, events: events});
     } catch (error) {
         console.error('Error:', error);
-        res.status(500).json({ success: false, message: 'Internal server error.' });
+        res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+const getAllFinishedEvents = async (req, res) => {
+    try {
+        let creatorId = req.params.creatorId;
+        const creator = await User.findByPk(creatorId);
 
+        if (!creator) {
+            return res.status(404).json({error: 'User not found.'});
+        }
+        let statusOption = parseInt(req.query.status, 10);
+
+//0=finished, 1= in progress, 2= upcoming
+        let events;
+        switch (statusOption) {
+            case 0:
+                events = await Event.findAll({
+                    where: {
+                        creator_id: creatorId,
+                        endTime: {[Sequelize.Op.lt]: new Date()}
+                    },
+                });
+                break;
+            case 1:
+                events = await Event.findAll({
+                    where: {
+                        creator_id: creatorId,
+                        startTime: {[Sequelize.Op.lte]: new Date()},
+                        endTime: {[Sequelize.Op.gt]: new Date()}
+                    },
+                });
+                break;
+            case 2:
+                events = await Event.findAll({
+                    where: {
+                        creator_id: creatorId,
+                        startTime: {[Sequelize.Op.gt]: new Date()}
+                    },
+                });
+                break;
+            default:
+                return res.status(400).json({error: 'Invalid status option.'});
+
+        }
+
+        return res.status(200).json({success: true, events: events});
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
 
 module.exports = {
     getAllUsers,
     addUser,
     updateAllPropertiesUser,
     getAllEventsByCreatorId,
+    getAllFinishedEvents,
     updateUser,
     deleteUser,
     getUserById,

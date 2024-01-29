@@ -3,7 +3,9 @@ const Location = require("../models/location");
 const EventType = require("../models/eventType")
 const EventImage = require("../models/eventImage");
 const Comment = require("../models/comment")
-const User=require('../models/user')
+const User = require('../models/user')
+const Invitation=require('../models/invitation')
+const Sequelize = require('sequelize');
 const addEvent = async (req, res) => {
     try {
         const eventData = {
@@ -34,9 +36,9 @@ const getEventById = async (req, res) => {
                 {
                     model: Comment,
                     as: 'eventComments',
-                    include:[{
+                    include: [{
                         model: User,
-                        as:'userComments'
+                        as: 'userComments'
                     }]
                 }
             ]
@@ -121,6 +123,81 @@ const updateEvent = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+const filterEvents = async (req, res) => {
+    try {
+        const {name, startDate, endDate} = req.query;
+        const query = {};
+
+        if (name) {
+            query.name = { [Sequelize.Op.iLike]: `%${name}%` };
+        }
+
+        if (startDate !== undefined && endDate !== undefined && startDate !== "" && endDate !== "") {
+            const parseStartDate = new Date(startDate);
+            const parseEndDate = new Date(endDate);
+
+            if (!isNaN(parseStartDate) && !isNaN(parseEndDate)) {
+                query.startTime = {
+                    [Sequelize.Op.gte]: parseStartDate,
+                    [Sequelize.Op.lte]: parseEndDate,
+                };
+                query.endTime = {
+                    [Sequelize.Op.gte]: parseStartDate,
+                    [Sequelize.Op.lte]: parseEndDate,
+                };
+            } else {
+                return res.status(400).json({success: false, message: 'Invalid date format.'});
+            }
+        }
+
+        const events = await Event.findAll({where: query});
+
+        res.json(events);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: 'Internal Server Error'});
+    }
+};
+// const getAllEventGuests = async (req, res) => {
+//     try {
+//         let id = req.params.id;
+//         const event = await Event.findByPk(id);
+//
+//         if (!event) {
+//             return res.status(404).json({error: 'Event not found.'});
+//         }
+//         let statusOption = parseInt(req.query.status, 10);
+//
+// //0=prihvatili pozivnice, 1= nisu prihvatili pzoivnice
+//         let guests;
+//         switch (statusOption) {
+//             case 0:
+//                 guests = await User.findAll({
+//                     include: [{
+//                         model: Event,
+//                         through: {
+//                             model: Invitation,
+//                             where: {
+//                                 statusGuest: true,
+//                             },
+//                         },
+//                         where: {
+//                             id: eventId,
+//                         },
+//                     }],
+//                 });
+//                 break;
+//             default:
+//                 return res.status(400).json({error: 'Invalid status option.'});
+//
+//         }
+//
+//         return res.status(200).json({success: true, guests: guests});
+//     } catch (error) {
+//         console.error('Error:', error);
+//         res.status(500).json({success: false, message: 'Internal server error.'});
+//     }
+// };
 
 module.exports = {
     getAllEvents,
@@ -129,5 +206,6 @@ module.exports = {
     deleteEvent,
     updateEvent,
     getEventsByLocationId,
-    getEventsByEventTypeId
+    getEventsByEventTypeId,
+    filterEvents
 }

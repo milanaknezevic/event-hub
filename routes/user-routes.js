@@ -2,6 +2,7 @@ const userController = require('../controllers/user-controller')
 const router = require('express').Router()
 
 router.get('/', userController.getAllUsers)
+router.get('/:creatorId/finishedEvents', userController.getAllFinishedEvents)
 router.get('/events/:creatorId', userController.getAllEventsByCreatorId)
 router.post('/', userController.addUser)
 router.put('/:id', userController.updateAllPropertiesUser)
