@@ -1,7 +1,6 @@
 const User = require("../models/user");
-const Location = require("../models/location");
 const Event = require("../models/event");
-const EventImage = require("../models/eventImage");
+const Invitation = require("../models/invitation");
 const {Sequelize} = require("sequelize");
 
 const addUser = async (req, res) => {
@@ -150,7 +149,44 @@ const getAllFinishedEvents = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+const getAllEventGuests = async (req, res) => {
+    try {
+        let eventId = req.params.eventId;
+        let statusOption = req.query.status === 'true';
+        let invitations;
+        switch (statusOption) {
+            case true:
+                invitations = await Invitation.findAll({
+                    where: {
+                        event_id: eventId,
+                        statusCreator: true,
+                        statusGuest: true,
+                    },
+                    include: [User]
+                });
+                break;
+            case false:
+                invitations = await Invitation.findAll({
+                    where: {
+                        event_id: eventId,
+                        statusCreator: true,
+                        statusGuest: false,
+                    },
+                    include: [User]
+                });
+                break;
+            default:
+                return res.status(400).json({error: 'Invalid status option.'});
 
+        }
+       const users = invitations.map(invitation => invitation.User);
+
+        return res.status(200).json({users: users});
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({message: 'Internal server error.'});
+    }
+};
 module.exports = {
     getAllUsers,
     addUser,
@@ -160,4 +196,5 @@ module.exports = {
     updateUser,
     deleteUser,
     getUserById,
+    getAllEventGuests
 }

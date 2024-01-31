@@ -2,9 +2,13 @@ const Sequelize = require('sequelize');
 const sequelize = require('../util/database');
 
 const Invitation = sequelize.define("Invitation", {
-    id: {
+    user_id:{
         type: Sequelize.INTEGER,
-        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+    },
+    event_id:{
+        type: Sequelize.INTEGER,
         allowNull: false,
         primaryKey: true
     },

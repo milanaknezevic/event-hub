@@ -29,8 +29,12 @@ User.hasMany(Ticket, {as: 'assignedTickets'});
 Ticket.belongsTo(User, {foreignKey: 'client_id', constraints: true, onDelete: 'CASCADE'});
 Ticket.belongsTo(User, {foreignKey: 'support_id', constraints: true, onDelete: 'CASCADE'});
 
-User.belongsToMany(Event, {through: Invitation});
-Event.belongsToMany(User, {through: Invitation});
+User.belongsToMany(Event, {through: 'Invitation', foreignKey: 'user_id'});
+Event.belongsToMany(User, {through: 'Invitation', foreignKey: 'event_id'});
+
+Invitation.belongsTo(User, {foreignKey: 'user_id', constraints: true, onDelete: 'CASCADE'});
+Invitation.belongsTo(Event, {foreignKey: 'event_id', constraints: true, onDelete: 'CASCADE'});
+//Invitation.belongsTo(Event, {foreignKey: 'event_id', as: 'event', constraints: true, onDelete: 'CASCADE' });
 
 module.exports = {
     Comment,
