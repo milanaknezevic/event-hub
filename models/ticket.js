@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../util/database');
+const {USER_ROLES, PRIORITY} = require("./enums");
 
 const Ticket = sequelize.define("Ticket", {
     id: {
@@ -16,13 +17,15 @@ const Ticket = sequelize.define("Ticket", {
         type: Sequelize.STRING(255),
         allowNull: true,
     },
-    priority: {
+    priority: {//visok srednj nizak
         type: Sequelize.SMALLINT,
         allowNull: false,
+        defaultValue: PRIORITY.LOW
     },
-    status: {
-        type: Sequelize.BOOLEAN,
-        allowNull: true,
+    status: {//opened closed in progress
+        type: Sequelize.SMALLINT,
+        allowNull: false,
+        defaultValue: USER_ROLES.CUSTOMER
     },
     creationDate: {
         type: Sequelize.DATE,
@@ -31,5 +34,6 @@ const Ticket = sequelize.define("Ticket", {
 }, {
     tableName: 'Ticket',
 });
+
 
 module.exports = Ticket;

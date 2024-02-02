@@ -24,8 +24,10 @@ Event.hasMany(EventImage, {as: 'eventImages', foreignKey: 'event_id'});
 EventImage.belongsTo(Event, {foreignKey: 'event_id', as: 'eventImages', constraints: true, onDelete: 'CASCADE'});
 
 
-User.hasMany(Ticket, {as: 'createdTickets'});
-User.hasMany(Ticket, {as: 'assignedTickets'});
+// User.hasMany(Ticket, {as: 'createdTickets'});
+// User.hasMany(Ticket, {as: 'assignedTickets'});
+User.hasMany(Ticket, {as: 'createdTickets', foreignKey: 'client_id'});
+User.hasMany(Ticket, {as: 'assignedTickets',foreignKey: 'support_id'});
 Ticket.belongsTo(User, {foreignKey: 'client_id', constraints: true, onDelete: 'CASCADE'});
 Ticket.belongsTo(User, {foreignKey: 'support_id', constraints: true, onDelete: 'CASCADE'});
 
@@ -34,7 +36,7 @@ Event.belongsToMany(User, {through: 'Invitation', foreignKey: 'event_id'});
 
 Invitation.belongsTo(User, {foreignKey: 'user_id', constraints: true, onDelete: 'CASCADE'});
 Invitation.belongsTo(Event, {foreignKey: 'event_id', constraints: true, onDelete: 'CASCADE'});
-//Invitation.belongsTo(Event, {foreignKey: 'event_id', as: 'event', constraints: true, onDelete: 'CASCADE' });
+
 
 module.exports = {
     Comment,

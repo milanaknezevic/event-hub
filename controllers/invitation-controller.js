@@ -12,8 +12,8 @@ const createInvitation = async (req, res) => {
         };
         const newInvitation = await Invitation.create(invitationData);
         res.status(201).json({
-            message: 'Invitation created succesfuly',
-            eventType: newInvitation
+            message: 'Invitation created successfully',
+            invitation: newInvitation
         });
     } catch (error) {
         console.log(error)

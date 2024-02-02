@@ -12,7 +12,8 @@ const eventTypeRouter = require('./routes/eventType-routes')
 const eventImageRouter = require('./routes/eventImage-routes')
 const eventRouter = require('./routes/event-routes')
 const commentRouter = require('./routes/comment-routes')
-const invitationRouter=require('./routes/invitation-routes')
+const invitationRouter = require('./routes/invitation-routes')
+const ticketRouter = require('./routes/ticket-routes')
 
 
 app.use(bodyParser.urlencoded({extended: false}))
@@ -25,6 +26,7 @@ app.use('/api/eventTypes', eventTypeRouter)
 app.use('/api/locations', locationRouter);
 app.use('/api/users', userRouter)
 app.use('/api/invitations', invitationRouter)
+app.use('/api/tickets', ticketRouter)
 
 app.get('/', (req, res) => {
     res.send("hello2")
