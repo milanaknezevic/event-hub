@@ -1,11 +1,12 @@
 const userController = require('../controllers/user-controller')
 const router = require('express').Router()
 
+router.post('/', userController.registerUser)
+router.post('/login', userController.login);
 router.get('/', userController.getAllUsers)
 router.get('/guests/:eventId', userController.getAllEventGuests);//api/users/guests/6?status=false
 router.get('/:creatorId/finishedEvents', userController.getAllFinishedEvents)//api/users/2/finishedEvents?status=1
 router.get('/events/:creatorId', userController.getAllEventsByCreatorId)
-router.post('/', userController.addUser)
 router.put('/:id', userController.updateAllPropertiesUser)
 router.patch('/:id', userController.updateUser)
 router.delete('/:id', userController.deleteUser)
