@@ -6,6 +6,7 @@ const Comment = require("../models/comment")
 const User = require('../models/user')
 const Invitation = require('../models/invitation')
 const Sequelize = require('sequelize');
+const {USER_ROLES, USER_STATUS} = require("../models/enums");
 const addEvent = async (req, res) => {
     try {
         const eventData = {
@@ -38,13 +39,15 @@ const getEventById = async (req, res) => {
                     as: 'eventComments',
                     include: [{
                         model: User,
-                        as: 'userComments'
+                        as: 'userComments',
+                        attributes: ['name', 'username','lastname']
                     }]
                 }
             ]
         })
         res.status(200).send(event)
     } catch (error) {
+        console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }

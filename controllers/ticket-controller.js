@@ -1,9 +1,16 @@
 const Ticket = require("../models/ticket");
+const { PRIORITY, STATUS} = require("../models/enums");
 const getAllTickets = async (req, res) => {
     try {
         let tickets = await Ticket.findAll({});
-        res.status(200).send({tickets});
+        const mappedTickets = tickets.map(ticket => ({
+            ...ticket.dataValues,
+            priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === ticket.dataValues.priority),
+            status: Object.keys(STATUS).find(key => STATUS[key] === ticket.dataValues.status),
+        }));
+        res.status(200).send({mappedTickets});
     } catch (error) {
+        console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -23,8 +30,39 @@ const getTicketsByAdminId = async (req, res) => {
                 tickets = await Ticket.findAll({where: {support_id: id}})
                 break;
         }
+        const mappedTickets = tickets.map(ticket => ({
+            ...ticket.dataValues,
+            priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === newTicket.dataValues.priority),
+            status: Object.keys(STATUS).find(key => STATUS[key] === newTicket.dataValues.status),
+        }));
+        res.status(200).send({mappedTickets});
+    } catch (error) {
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+}
+const getTicketsByUserId = async (req, res) => {
+    try {
+        let id = req.params.id;
+        let repliedOptions = req.query.replied === 'true';
+        let tickets;
+        switch (repliedOptions) {
+            case true: //procitano
+                tickets = await Ticket.findAll({where: {client_id: id, status: 1}})
+                break;
+            case false://nije procitano
+                tickets = await Ticket.findAll({where: {client_id: id, status: 2}})
+                break;
+            default: //i procitano i ne procitano
+                tickets = await Ticket.findAll({where: {client_id: id}})
+                break;
+        }
 
-        res.status(200).send({tickets});
+        const mappedTickets = tickets.map(ticket => ({
+            ...ticket.dataValues,
+            priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === newTicket.dataValues.priority),
+            status: Object.keys(STATUS).find(key => STATUS[key] === newTicket.dataValues.status),
+        }));
+        res.status(200).send({mappedTickets});
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -34,16 +72,19 @@ const createTicket = async (req, res) => {
     try {
         const ticketData = {
             question: req.body.question,
-            priority: req.body.priority,
-            status: req.body.status,//treba biti 0 po defaultu jer je opened cim je kreiran
             client_id: req.body.client_id,
             creationDate: new Date(),
         };
 
         const newTicket = await Ticket.create(ticketData);
+        const mappedTicket = {
+            ...newTicket.dataValues,
+            priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === newTicket.dataValues.priority),
+            status: Object.keys(STATUS).find(key => STATUS[key] === newTicket.dataValues.status),
+        };
         res.status(201).json({
             message: 'Ticket created successfully',
-            ticket: newTicket,
+            ticket: mappedTicket,
         });
     } catch (error) {
         console.error(error);
@@ -99,9 +140,10 @@ const replyToTicket = async (req, res) => {
 }
 
 module.exports = {
-    getAllTickets,
     createTicket,
+    getAllTickets,
     getTicketsByAdminId,
+    getTicketsByUserId,
     assignToTicket,
     replyToTicket
 

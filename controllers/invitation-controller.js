@@ -1,6 +1,7 @@
 const Invitation = require("../models/invitation");
 const Event = require("../models/event");
 const User = require("../models/user");
+const {USER_ROLES, USER_STATUS} = require("../models/enums");
 
 const createInvitation = async (req, res) => {
     try {
@@ -77,11 +78,26 @@ const getInvitationById = async (req, res) => {
             where: {
                 user_id: userId,
                 event_id: eventId,
-            }
+            },
+            include: [{
+                model: User,
+                as: 'invitedUser',
+            },{
+                model: Event,
+                as: 'event',
+            }],
         });
 
         if (existingInvitation) {
-            res.status(200).send(existingInvitation)
+            const mappedInvitation = {
+                ...existingInvitation.dataValues,
+                invitedUser: {
+                    ...existingInvitation.invitedUser.dataValues,
+                    role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === existingInvitation.invitedUser.dataValues.role),
+                    status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === existingInvitation.invitedUser.dataValues.status),
+                },
+            };
+            res.status(200).send(mappedInvitation)
         } else {
             res.status(404).json({success: false, message: 'Invitation not found.'});
         }
@@ -102,9 +118,21 @@ const getInvitationByEventId = async (req, res) => {
                     statusCreator: false,
                     statusGuest: true,
                 },
-                include: [User]
+                 include: [{
+                     model: User,
+                     as: 'invitedUser',
+                 }],
             });
-            res.status(200).send(invitations)
+            const mappedInvitations = invitations.map(invitation => ({
+                ...invitation.dataValues,
+                invitedUser: {
+                    ...invitation.invitedUser.dataValues,
+                    role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === invitation.invitedUser.dataValues.role),
+                    status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === invitation.invitedUser.dataValues.status),
+                },
+            }));
+
+            res.status(200).send(mappedInvitations)
         } else {
             res.status(404).json({success: false, message: 'Event not found.'});
         }

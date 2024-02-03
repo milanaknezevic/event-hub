@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../util/database');
-const {USER_ROLES, PRIORITY} = require("./enums");
+const {USER_ROLES, PRIORITY, STATUS} = require("./enums");
 
 const Ticket = sequelize.define("Ticket", {
     id: {
@@ -19,13 +19,25 @@ const Ticket = sequelize.define("Ticket", {
     },
     priority: {//visok srednj nizak
         type: Sequelize.SMALLINT,
-        allowNull: false,
-        defaultValue: PRIORITY.LOW
+        allowNull: true,
+        defaultValue: PRIORITY.LOW,
+        validate: {
+            isIn: {
+                args: [Object.values(PRIORITY)],
+                msg: 'Invalid priority value',
+            },
+        }
     },
     status: {//opened closed in progress
         type: Sequelize.SMALLINT,
-        allowNull: false,
-        defaultValue: USER_ROLES.CUSTOMER
+        allowNull: true,
+        defaultValue: STATUS.OPENED,
+        validate: {
+            isIn: {
+                args: [Object.values(STATUS)],
+                msg: 'Invalid ticket status value',
+            },
+        }
     },
     creationDate: {
         type: Sequelize.DATE,

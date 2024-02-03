@@ -1,6 +1,7 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../util/database');
 const Event = require('./event')
+const {USER_STATUS, USER_ROLES} = require("./enums");
 
 const User = sequelize.define("User", {
     id: {
@@ -39,10 +40,18 @@ const User = sequelize.define("User", {
     role: {
         type: Sequelize.SMALLINT,
         allowNull: false,
+        default: USER_ROLES.CLIENT,
+        validate: {
+            isIn: {
+                args: [Object.values(USER_ROLES)],
+                msg: 'Invalid user status value',
+            },
+        }
     },
     status: {
         type: Sequelize.SMALLINT,
         allowNull: false,
+        default: USER_STATUS.REQUESTED
     },
     avatar: {
         type: Sequelize.STRING(1024),

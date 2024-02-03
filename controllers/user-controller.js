@@ -2,6 +2,7 @@ const User = require("../models/user");
 const Event = require("../models/event");
 const Invitation = require("../models/invitation");
 const {Sequelize} = require("sequelize");
+const {USER_ROLES, USER_STATUS} = require("../models/enums");
 
 const addUser = async (req, res) => {
     try {
@@ -17,11 +18,17 @@ const addUser = async (req, res) => {
             avatar: req.body.avatar,
         };
         const newUser = await User.create(userData);
+        const mappedUser = {
+            ...newUser.dataValues,
+            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === newUser.dataValues.role),
+            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === newUser.dataValues.status),
+        };
         res.status(201).json({
             message: 'User added succesfuly',
-            user: newUser
+            user: mappedUser
         });
     } catch (error) {
+        console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -29,7 +36,12 @@ const addUser = async (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         let users = await User.findAll({})
-        res.status(200).send({users});
+        const mappedUsers = users.map(user => ({
+            ...user.dataValues,
+            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
+            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
+        }));
+        res.status(200).send({mappedUsers});
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -38,7 +50,12 @@ const getUserById = async (req, res) => {
     try {
         let id = req.params.id
         let user = await User.findOne({where: {id: id}})
-        res.status(200).send(user)
+        const mappedUser = {
+            ...user.dataValues,
+            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
+            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
+        };
+        res.status(200).send(mappedUser)
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -73,8 +90,14 @@ const updateUser = async (req, res) => {
             return res.status(404).json({success: false, message: 'User not found.'});
         }
         await existingUser.update(updatedProperties);
+        const mappedUser = {
+            ...existingUser.dataValues,
+            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === existingUser.dataValues.role),
+            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === existingUser.dataValues.status),
+        };
 
-        res.status(200).json({success: true, message: 'User properties updated successfully.', user: existingUser});
+
+        res.status(200).json({success: true, message: 'User properties updated successfully.', user: mappedUser});
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -179,14 +202,21 @@ const getAllEventGuests = async (req, res) => {
                 return res.status(400).json({error: 'Invalid status option.'});
 
         }
-       const users = invitations.map(invitation => invitation.User);
+        const users = invitations.map(invitation => invitation.User);
 
-        return res.status(200).json({users: users});
+        const mappedUsers = users.map(user => ({
+            ...user.dataValues,
+            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
+            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
+        }));
+
+        return res.status(200).json({users: mappedUsers});
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({message: 'Internal server error.'});
     }
 };
+
 module.exports = {
     getAllUsers,
     addUser,

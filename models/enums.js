@@ -1,9 +1,14 @@
-const USER_ROLES = {
+const  USER_ROLES = Object.freeze( {
     ADMIN: 0,
     SUPPORT: 1,
-    CUSTOMER: 2,
-};
+    CLIENT: 2,
+});
 
+const USER_STATUS = {
+    REQUESTED: 0,
+    ACTIVE: 1,
+    BLOCKED: 2,
+};
 const STATUS = {
     OPENED: 0,
     CLOSED: 1,
@@ -19,5 +24,6 @@ const PRIORITY = {
 module.exports = {
     USER_ROLES,
     STATUS,
-    PRIORITY
+    PRIORITY,
+    USER_STATUS
 }
