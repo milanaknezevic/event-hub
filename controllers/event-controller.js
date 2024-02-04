@@ -53,7 +53,12 @@ const getEventById = async (req, res) => {
 }
 const getAllEvents = async (req, res) => {
     try {
+        const page = req.query.page || 1;
+        const size = req.query.size || 10;
+
         let events = await Event.findAll({
+            limit: size,
+            offset: (page - 1) * size,
             include: [{model: EventImage, as: 'eventImages'}]
         });
         res.status(200).send({events});
@@ -63,7 +68,8 @@ const getAllEvents = async (req, res) => {
 };
 const getEventsByLocationId = async (req, res) => {
     try {
-
+        const page = req.query.page || 1;
+        const size = req.query.size || 10;
         let locationId = req.params.locationId
         const location = await Location.findByPk(locationId);
 
@@ -75,6 +81,8 @@ const getEventsByLocationId = async (req, res) => {
                 {model: Location, where: {id: locationId}},
                 {model: EventImage, as: 'eventImages'},
             ],
+            limit: size,
+            offset: (page - 1) * size,
         });
         return res.status(200).json(events);
     } catch (error) {
@@ -84,6 +92,8 @@ const getEventsByLocationId = async (req, res) => {
 const getEventsByEventTypeId = async (req, res) => {
     try {
 
+        const page = req.query.page || 1;
+        const size = req.query.size || 10;
         let eventTypeId = req.params.eventTypeId
         const eventType = await EventType.findByPk(eventTypeId);
 
@@ -95,6 +105,8 @@ const getEventsByEventTypeId = async (req, res) => {
                 {model: EventType, where: {id: eventTypeId}},
                 {model: EventImage, as: 'eventImages'},
             ],
+            limit: size,
+            offset: (page - 1) * size,
         });
         return res.status(200).json(events);
     } catch (error) {
@@ -129,6 +141,8 @@ const updateEvent = async (req, res) => {
 const filterEvents = async (req, res) => {
     try {
         const {name, startDate, endDate} = req.query;
+        const page = req.query.page || 1;
+        const size = req.query.size || 10;
         const query = {};
 
         if (name) {
@@ -153,7 +167,11 @@ const filterEvents = async (req, res) => {
             }
         }
 
-        const events = await Event.findAll({where: query});
+        const events = await Event.findAll({
+            where: query,
+            limit:size,
+            offset: (page - 1) * size
+        });
 
         res.json(events);
     } catch (error) {
@@ -164,13 +182,20 @@ const filterEvents = async (req, res) => {
 const getAllEventsForGuest = async (req, res) => {
     try {
         let guestId = req.params.guestId;
+        const page = req.query.page || 1;
+        const size = req.query.size || 10;
+
         const invitations = await Invitation.findAll({
             where: {
                 user_id: guestId,
                 statusCreator: true,
                 statusGuest: true,
             },
-            include: [Event],
+            include: [{
+                model: Event,
+                limit: size,
+                offset: (page - 1) * size,
+            }],
         });
         const events = invitations.map(invitation => invitation.Event);
         const pastEvents = [];
