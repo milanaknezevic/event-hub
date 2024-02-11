@@ -5,11 +5,12 @@ const {USER_ROLES, USER_STATUS} = require("../models/enums");
 
 const createInvitation = async (req, res) => {
     try {
+        let eventId = req.params
         const invitationData = {
-            user_id: req.body.user_id,
-            event_id: req.body.event_id,
-            statusCreator: req.body.statusCreator ? req.body.statusCreator : false,
-            statusGuest: req.body.statusGuest ? req.body.statusGuest : false,
+            user_id: req.user.id,
+            event_id: eventId,
+            statusCreator: req.user.role === 0,
+            statusGuest: req.user.role === 2
         };
         const newInvitation = await Invitation.create(invitationData);
         res.status(201).json({
@@ -23,11 +24,13 @@ const createInvitation = async (req, res) => {
 }
 const acceptInvitationGuest = async (req, res) => {
     try {
-        let {userId, eventId} = req.params
+        let eventId = req.params
         const existingInvitation = await Invitation.findOne({
             where: {
-                user_id: userId,
+                user_id: req.user.id,
                 event_id: eventId,
+                statusGuest: false,
+                statusCreator: true,
             }
         });
         if (existingInvitation) {
@@ -44,11 +47,13 @@ const acceptInvitationGuest = async (req, res) => {
 }
 const acceptInvitationCreator = async (req, res) => {
     try {
-        let {userId, eventId} = req.params
+        let  eventId = req.params
         const existingInvitation = await Invitation.findOne({
             where: {
-                user_id: userId,
+                user_id: req.user.id,
                 event_id: eventId,
+                statusCreator:false,
+                statusGuest:true
             }
         });
         if (existingInvitation) {
@@ -82,7 +87,7 @@ const getInvitationById = async (req, res) => {
             include: [{
                 model: User,
                 as: 'invitedUser',
-            },{
+            }, {
                 model: Event,
                 as: 'event',
             }],
@@ -107,21 +112,21 @@ const getInvitationById = async (req, res) => {
 }
 
 
-const getInvitationByEventId = async (req, res) => {
+const getInvitationsByEventId = async (req, res) => {
     try {
         let eventId = req.params.eventId
         let event = await Event.findOne({where: {id: eventId}})
         if (event) {
-             let invitations = await Invitation.findAll({
+            let invitations = await Invitation.findAll({
                 where: {
                     event_id: eventId,
                     statusCreator: false,
                     statusGuest: true,
                 },
-                 include: [{
-                     model: User,
-                     as: 'invitedUser',
-                 }],
+                include: [{
+                    model: User,
+                    as: 'invitedUser',
+                }],
             });
             const mappedInvitations = invitations.map(invitation => ({
                 ...invitation.dataValues,
@@ -147,5 +152,5 @@ module.exports = {
     acceptInvitationCreator,
     getInvitationById,
     getAllInvitation,
-    getInvitationByEventId
+    getInvitationsByEventId
 }

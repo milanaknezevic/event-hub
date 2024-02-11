@@ -1,11 +1,16 @@
 const invitationController = require('../controllers/invitation-controller')
+const {verifyUserToken, IsClient, IsOrganizer} = require("../middleware/auth");
 const router = require('express').Router()
 
+router.post('/:eventId', verifyUserToken, IsClient, IsOrganizer, invitationController.createInvitation) //pozivam korisnika a i korisnik se prijavljuje
+router.get('/event/:eventId', verifyUserToken, IsOrganizer, invitationController.getInvitationsByEventId)//prikazuje yahtjeve ya prisustvo
+router.put('/guest/:eventId',verifyUserToken,IsClient, invitationController.acceptInvitationGuest)
+router.put('/creator/:eventId',verifyUserToken,IsOrganizer, invitationController.acceptInvitationCreator)
+router.get('/:userId/:eventId',verifyUserToken,IsOrganizer,IsClient, invitationController.getInvitationById)
+//organizator treba da vidi sve pozive koje je primio za neki dogadjaj, klijent treba da vidi sve pozivnice koje je primio i poslao.
+
+
+//nepotrebna ruta
 router.get('/', invitationController.getAllInvitation)
-router.get('/event/:eventId', invitationController.getInvitationByEventId)//prikazuje yahtjeve ya prisustvo
-router.post('/', invitationController.createInvitation) //pozivam korisnika a i korisnik se prijavljuje
-router.put('/guest/:userId/:eventId', invitationController.acceptInvitationGuest)
-router.put('/creator/:userId/:eventId', invitationController.acceptInvitationCreator)
-router.get('/:userId/:eventId', invitationController.getInvitationById)
 
 module.exports = router

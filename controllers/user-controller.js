@@ -89,8 +89,13 @@ const deleteUser = async (req, res) => {
 }
 
 const updateUser = async (req, res) => {
+
     const userId = req.params.id;
+    if (req.user.id !== userId) {
+        return res.status(401).send('Unauthorized request');
+    }
     const updatedProperties = req.body;
+
     try {
         const existingUser = await User.findByPk(userId);
 
@@ -131,7 +136,7 @@ const getAllEventsByCreatorId = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
-const getAllFinishedEvents = async (req, res) => {
+const getAllOrganizerEvents = async (req, res) => {
     try {
         let creatorId = req.params.creatorId;
         const creator = await User.findByPk(creatorId);
@@ -170,7 +175,10 @@ const getAllFinishedEvents = async (req, res) => {
                 });
                 break;
             default:
-                return res.status(400).json({error: 'Invalid status option.'});
+                events = await Event.findAll({
+                    where: {creator_id: creatorId},
+                });
+            // return res.status(400).json({error: 'Invalid status option.'});
 
         }
 
@@ -183,7 +191,7 @@ const getAllFinishedEvents = async (req, res) => {
 const getAllEventGuests = async (req, res) => {
     try {
         let eventId = req.params.eventId;
-        let statusOption = req.query.status === 'true';
+        let statusOption = req.query.status;
         let invitations;
         switch (statusOption) {
             case true:
@@ -268,21 +276,23 @@ const registerUser = async (req, res) => {
 };
 const login = async (req, res) => {
     try {
-        const { username, password} = req.body;
+        const {username, password} = req.body;
 
-        const user = await User.findOne({where: { username: username}});
+        const user = await User.findOne({where: {username: username}});
         if (!user) {
             return res.status(401).json({message: "Authentication Failed"})
         }
-        let isPasswordValid  = bcrypt.compare(password, user.password)
-        if (!isPasswordValid ) {
+        let isPasswordValid = bcrypt.compare(password, user.password)
+        if (!isPasswordValid) {
             return res.status(401).json({
                 message: "Authentication Failed"
             })
-        }else{
+        } else {
             let jwtToken = jwt.sign(
                 {
+                    id: user.id,
                     username: user.username,
+                    role: user.role
                 },
                 process.env.JWT_SECRET,
                 {
@@ -308,7 +318,7 @@ module.exports = {
     addUser,
     updateAllPropertiesUser,
     getAllEventsByCreatorId,
-    getAllFinishedEvents,
+    getAllOrganizerEvents,
     updateUser,
     deleteUser,
     getUserById,

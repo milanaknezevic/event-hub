@@ -1,15 +1,25 @@
 const userController = require('../controllers/user-controller')
+const {verifyUserToken, IsSupport, IsOrganizer,} = require("../middleware/auth");
 const router = require('express').Router()
+
 
 router.post('/', userController.registerUser)
 router.post('/login', userController.login);
-router.get('/', userController.getAllUsers)
-router.get('/guests/:eventId', userController.getAllEventGuests);//api/users/guests/6?status=false
-router.get('/:creatorId/finishedEvents', userController.getAllFinishedEvents)//api/users/2/finishedEvents?status=1
+
+//ADMIN
+router.get('/', verifyUserToken, IsSupport, userController.getAllUsers) //admin(support) moze pregledati sve korisnike
+router.delete('/:id', verifyUserToken, IsSupport, userController.deleteUser)
+
+
+router.get('/guests/:eventId', verifyUserToken, IsOrganizer, userController.getAllEventGuests);//api/users/guests/6?status=false
+router.get('/:creatorId/events', verifyUserToken, IsOrganizer, userController.getAllOrganizerEvents)//api/users/2/events?status=1
+router.patch('/:id', verifyUserToken, userController.updateUser)
+router.get('/:id', verifyUserToken, userController.getUserById)
+
+
+//nepotrebna metoda
 router.get('/events/:creatorId', userController.getAllEventsByCreatorId)
 router.put('/:id', userController.updateAllPropertiesUser)
-router.patch('/:id', userController.updateUser)
-router.delete('/:id', userController.deleteUser)
-router.get('/:id', userController.getUserById)
+
 
 module.exports = router

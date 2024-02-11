@@ -1,7 +1,9 @@
 const eventTypeController = require('../controllers/eventType-controller');
+const {verifyUserToken, IsSupport} = require("../middleware/auth");
 const router = require('express').Router();
 
-router.get('/', eventTypeController.getAllEventTypes);
-router.post('/', eventTypeController.addEventType);
+router.get('/',verifyUserToken, eventTypeController.getAllEventTypes);
+//
+router.post('/',verifyUserToken,IsSupport, eventTypeController.addEventType);
 
 module.exports = router;

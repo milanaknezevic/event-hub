@@ -2,7 +2,11 @@ const Ticket = require("../models/ticket");
 const { PRIORITY, STATUS} = require("../models/enums");
 const getAllTickets = async (req, res) => {
     try {
-        let tickets = await Ticket.findAll({});
+        let tickets = await Ticket.findAll({
+            where: {
+                status: 0,
+            }
+        });
         const mappedTickets = tickets.map(ticket => ({
             ...ticket.dataValues,
             priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === ticket.dataValues.priority),
@@ -17,17 +21,15 @@ const getAllTickets = async (req, res) => {
 const getTicketsByAdminId = async (req, res) => {
     try {
         let id = req.params.id;
-        let repliedOptions = req.query.replied === 'true';
         let tickets;
-        switch (repliedOptions) {
-            case true: //procitano
+        switch (req.query.replied) {
+            case 1: //procitano tj odgovoreno tj closed
                 tickets = await Ticket.findAll({where: {support_id: id, status: 1}})
                 break;
-            case false://nije procitano
+            case 2://in porogress stavio na sebe nije odgovorio
                 tickets = await Ticket.findAll({where: {support_id: id, status: 2}})
                 break;
-            default: //i procitano i ne procitano
-                tickets = await Ticket.findAll({where: {support_id: id}})
+            default:
                 break;
         }
         const mappedTickets = tickets.map(ticket => ({
@@ -43,17 +45,16 @@ const getTicketsByAdminId = async (req, res) => {
 const getTicketsByUserId = async (req, res) => {
     try {
         let id = req.params.id;
-        let repliedOptions = req.query.replied === 'true';
         let tickets;
-        switch (repliedOptions) {
-            case true: //procitano
+        switch (req.query.replied) {
+            case 1: //procitano
                 tickets = await Ticket.findAll({where: {client_id: id, status: 1}})
                 break;
-            case false://nije procitano
+            case 2://nije procitano tj in progress
                 tickets = await Ticket.findAll({where: {client_id: id, status: 2}})
                 break;
-            default: //i procitano i ne procitano
-                tickets = await Ticket.findAll({where: {client_id: id}})
+            default: //open tiketi
+                tickets = await Ticket.findAll({where: {client_id: id, status:0}})
                 break;
         }
 
@@ -93,14 +94,14 @@ const createTicket = async (req, res) => {
 };
 const assignToTicket = async (req, res) => {
     try {
-        let {ticketId, supportId} = req.params
+        let ticketId = req.params
         const existingTicket = await Ticket.findOne({
             where: {
                 id: ticketId,
             }
         });
         if (existingTicket) {
-            existingTicket.support_id = supportId;
+            existingTicket.support_id = req.user.id;
             existingTicket.status = 2;//in progress
             await existingTicket.save();
             res.status(200).json({success: true, message: 'Ticket successfully assigned to support.'})
@@ -115,7 +116,7 @@ const assignToTicket = async (req, res) => {
 }
 const replyToTicket = async (req, res) => {
     try {
-        let {ticketId, supportId} = req.params
+        let ticketId = req.params
         const answer = req.body.answer;
         console.log(answer)
         const existingTicket = await Ticket.findOne({
@@ -124,7 +125,7 @@ const replyToTicket = async (req, res) => {
             }
         });
         if (existingTicket) {
-            existingTicket.support_id = supportId;
+            existingTicket.support_id = req.user.id;
             existingTicket.answer = answer;
             existingTicket.status = 1;//closed
             await existingTicket.save();

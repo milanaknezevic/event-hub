@@ -40,7 +40,7 @@ const getEventById = async (req, res) => {
                     include: [{
                         model: User,
                         as: 'userComments',
-                        attributes: ['name', 'username','lastname']
+                        attributes: ['name', 'username', 'lastname']
                     }]
                 }
             ]
@@ -57,6 +57,15 @@ const getAllEvents = async (req, res) => {
         const size = req.query.size || 10;
 
         let events = await Event.findAll({
+            where: {
+                $and: [
+                    {startTime: {[Sequelize.Op.gt]: new Date()}},
+                    {
+                        startTime: {[Sequelize.Op.lte]: new Date()},
+                        endTime: {[Sequelize.Op.gt]: new Date()}
+                    }
+                ]
+            },
             limit: size,
             offset: (page - 1) * size,
             include: [{model: EventImage, as: 'eventImages'}]
@@ -169,7 +178,7 @@ const filterEvents = async (req, res) => {
 
         const events = await Event.findAll({
             where: query,
-            limit:size,
+            limit: size,
             offset: (page - 1) * size
         });
 
@@ -190,6 +199,7 @@ const getAllEventsForGuest = async (req, res) => {
                 user_id: guestId,
                 statusCreator: true,
                 statusGuest: true,
+                startTime: {[Sequelize.Op.gt]: new Date()}
             },
             include: [{
                 model: Event,
@@ -204,13 +214,13 @@ const getAllEventsForGuest = async (req, res) => {
             const endTime = new Date(event.dataValues.endTime);
             const startTime = new Date(event.dataValues.startTime);
 
-            if (endTime <  new Date()) {
+            if (endTime < new Date()) {
                 pastEvents.push(event);
-            }else   if (startTime >  new Date()) {
+            } else if (startTime > new Date()) {
                 upcomingEvents.push(event);
             }
         });
-        return res.status(200).json({pastEvents: pastEvents, upcomingEvents:upcomingEvents});
+        return res.status(200).json({pastEvents: pastEvents, upcomingEvents: upcomingEvents});
     } catch (error) {
         console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
