@@ -24,7 +24,7 @@ const verifyUserToken = (req, res, next) => {
         next();
 
     } catch (error) {
-        res.status(400).send("Invalid Token");
+        res.status(401).send("Invalid Token");
     }
 }
 
@@ -37,14 +37,25 @@ const checkRole = (expectedRole) => {
         }
     };
 };
+const  IsOrganizerOrClient = (req, res, next) => {
+    const isOrganizer = req.user && req.user.role === 0;
+    const isClient = req.user && req.user.role === 2;
+
+    if (isOrganizer || isClient) {
+        next();
+    } else {
+        res.status(401).send("Unauthorized!");
+    }
+}
 
 const IsOrganizer = checkRole(0);
 const IsSupport = checkRole(1);
-const IsClient = checkRole(3);
+const IsClient = checkRole(2);
 
 module.exports = {
     verifyUserToken,
     IsOrganizer,
     IsSupport,
-    IsClient
+    IsClient,
+    IsOrganizerOrClient
 };

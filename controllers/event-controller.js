@@ -29,11 +29,11 @@ const addEvent = async (req, res) => {
 }
 const getEventById = async (req, res) => {
     try {
-        let id = req.params.id
+        let id = req.params.id;
         let event = await Event.findOne({
-            where: {id: id},
+            where: { id: id },
             include: [
-                {model: EventImage, as: 'eventImages'},
+                { model: EventImage, as: 'eventImages' },
                 {
                     model: Comment,
                     as: 'eventComments',
@@ -42,15 +42,23 @@ const getEventById = async (req, res) => {
                         as: 'userComments',
                         attributes: ['name', 'username', 'lastname']
                     }]
+                },
+                {
+                    model: Location,
                 }
-            ]
-        })
-        res.status(200).send(event)
+                , {
+                    model: EventType,
+                }
+            ],
+            attributes: {exclude: ['location_id','eventType_id']},
+        });
+        res.status(200).send(event);
     } catch (error) {
-        console.log(error)
-        res.status(500).json({success: false, message: 'Internal server error.'});
+        console.log(error);
+        res.status(500).json({ success: false, message: 'Internal server error.' });
     }
-}
+};
+
 const getAllEvents = async (req, res) => {
     try {
         const page = req.query.page || 1;

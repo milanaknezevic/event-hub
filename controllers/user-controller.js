@@ -5,6 +5,8 @@ const {Sequelize} = require("sequelize");
 const {USER_ROLES, USER_STATUS} = require("../models/enums");
 const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
+const EventType = require("../models/eventType");
+const EventImage = require("../models/eventImage");
 
 
 const addUser = async (req, res) => {
@@ -46,7 +48,7 @@ const getAllUsers = async (req, res) => {
             role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
             status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
         }));
-        res.status(200).send(mappedUser)
+        res.status(200).send(mappedUsers)
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -139,48 +141,54 @@ const getAllEventsByCreatorId = async (req, res) => {
 const getAllOrganizerEvents = async (req, res) => {
     try {
         let creatorId = req.params.creatorId;
-        const creator = await User.findByPk(creatorId);
+        const {page = 1, size = 10, name, locationId, eventTypeId, status} = req.query;
+        let statusOption = parseInt(status, 10);
 
-        if (!creator) {
-            return res.status(404).json({error: 'User not found.'});
-        }
-        let statusOption = parseInt(req.query.status, 10);
-
-//0=finished, 1= in progress, 2= upcoming
         let events;
+        let dateFilter = {};
+
         switch (statusOption) {
             case 0:
-                events = await Event.findAll({
-                    where: {
-                        creator_id: creatorId,
-                        endTime: {[Sequelize.Op.lt]: new Date()}
-                    },
-                });
+                dateFilter = {endTime: {[Sequelize.Op.lt]: new Date()}};
                 break;
             case 1:
-                events = await Event.findAll({
-                    where: {
-                        creator_id: creatorId,
-                        startTime: {[Sequelize.Op.lte]: new Date()},
-                        endTime: {[Sequelize.Op.gt]: new Date()}
-                    },
-                });
+                dateFilter = {
+                    startTime: {[Sequelize.Op.lte]: new Date()},
+                    endTime: {[Sequelize.Op.gt]: new Date()}
+                };
                 break;
             case 2:
-                events = await Event.findAll({
-                    where: {
-                        creator_id: creatorId,
-                        startTime: {[Sequelize.Op.gt]: new Date()}
-                    },
-                });
+                dateFilter = {startTime: {[Sequelize.Op.gt]: new Date()}};
                 break;
             default:
-                events = await Event.findAll({
-                    where: {creator_id: creatorId},
-                });
-            // return res.status(400).json({error: 'Invalid status option.'});
-
+                break;
         }
+
+        let additionalFilters = {
+            creator_id: creatorId,
+            ...dateFilter,
+        };
+
+        if (locationId) {
+            additionalFilters.location_id = locationId;
+        }
+
+        if (eventTypeId) {
+            additionalFilters.event_type_id = eventTypeId;
+        }
+
+        if (name) {
+            additionalFilters.name = {[Sequelize.Op.iLike]: `%${name}%`};
+        }
+
+        events = await Event.findAll({
+            where: additionalFilters,
+            include: [
+                {model: EventImage, as: 'eventImages'},
+            ],
+            limit: size,
+            offset: (page - 1) * size,
+        });
 
         return res.status(200).json({success: true, events: events});
     } catch (error) {
