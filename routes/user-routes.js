@@ -17,9 +17,5 @@ router.patch('/:id', verifyUserToken, userController.updateUser)
 router.get('/:id', verifyUserToken, userController.getUserById)
 
 
-//nepotrebna metoda
-router.get('/events/:creatorId', userController.getAllEventsByCreatorId)
-router.put('/:id', userController.updateAllPropertiesUser)
-
 
 module.exports = router

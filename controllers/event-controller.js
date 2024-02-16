@@ -31,9 +31,9 @@ const getEventById = async (req, res) => {
     try {
         let id = req.params.id;
         let event = await Event.findOne({
-            where: { id: id },
+            where: {id: id},
             include: [
-                { model: EventImage, as: 'eventImages' },
+                {model: EventImage, as: 'eventImages'},
                 {
                     model: Comment,
                     as: 'eventComments',
@@ -50,33 +50,60 @@ const getEventById = async (req, res) => {
                     model: EventType,
                 }
             ],
-            attributes: {exclude: ['location_id','eventType_id']},
+            attributes: {exclude: ['location_id', 'eventType_id']},
         });
         res.status(200).send(event);
     } catch (error) {
         console.log(error);
-        res.status(500).json({ success: false, message: 'Internal server error.' });
+        res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
 
 const getAllEvents = async (req, res) => {
     try {
-        const page = req.query.page || 1;
-        const size = req.query.size || 10;
+        const {page = 1, size = 10, name, locationId, eventTypeId, status} = req.query;
+        let statusOption = parseInt(status, 10);
+        let events;
+        let dateFilter = {};
 
-        let events = await Event.findAll({
-            where: {
-                $and: [
-                    {startTime: {[Sequelize.Op.gt]: new Date()}},
-                    {
-                        startTime: {[Sequelize.Op.lte]: new Date()},
-                        endTime: {[Sequelize.Op.gt]: new Date()}
-                    }
-                ]
-            },
+        switch (statusOption) {
+            case 0:
+                dateFilter = {endTime: {[Sequelize.Op.lt]: new Date()}};
+                break;
+            case 1:
+                dateFilter = {
+                    startTime: {[Sequelize.Op.lte]: new Date()},
+                    endTime: {[Sequelize.Op.gt]: new Date()}
+                };
+                break;
+            case 2:
+                dateFilter = {startTime: {[Sequelize.Op.gt]: new Date()}};
+                break;
+            default:
+                break;
+        }
+        let additionalFilters = {
+            ...dateFilter,
+        };
+
+        if (locationId) {
+            additionalFilters.location_id = locationId;
+        }
+
+        if (eventTypeId) {
+            additionalFilters.event_type_id = eventTypeId;
+        }
+
+        if (name) {
+            additionalFilters.name = {[Sequelize.Op.iLike]: `%${name}%`};
+        }
+        events = await Event.findAll({
+            where: additionalFilters,
+            include: [
+                {model: EventImage, as: 'eventImages'},
+            ],
             limit: size,
             offset: (page - 1) * size,
-            include: [{model: EventImage, as: 'eventImages'}]
         });
         res.status(200).send({events});
     } catch (error) {
@@ -197,38 +224,63 @@ const filterEvents = async (req, res) => {
     }
 };
 const getAllEventsForGuest = async (req, res) => {
+
     try {
         let guestId = req.params.guestId;
-        const page = req.query.page || 1;
-        const size = req.query.size || 10;
+        const {page = 1, size = 10, name, locationId, eventTypeId, status} = req.query;
+        let statusOption = parseInt(status, 10);
 
+        let events;
+        let dateFilter = {};
+        switch (statusOption) {
+            case 0:
+                dateFilter = {endTime: {[Sequelize.Op.lt]: new Date()}};
+                break;
+            case 1:
+                dateFilter = {
+                    startTime: {[Sequelize.Op.lte]: new Date()},
+                    endTime: {[Sequelize.Op.gt]: new Date()}
+                };
+                break;
+            case 2:
+                dateFilter = {startTime: {[Sequelize.Op.gt]: new Date()}};
+                break;
+            default:
+                break;
+        }
+        let additionalFilters = {
+            ...dateFilter,
+        };
+
+        if (locationId) {
+            additionalFilters.location_id = locationId;
+        }
+
+        if (eventTypeId) {
+            additionalFilters.event_type_id = eventTypeId;
+        }
+
+        if (name) {
+            additionalFilters.name = {[Sequelize.Op.iLike]: `%${name}%`};
+        }
         const invitations = await Invitation.findAll({
             where: {
                 user_id: guestId,
                 statusCreator: true,
                 statusGuest: true,
-                startTime: {[Sequelize.Op.gt]: new Date()}
             },
             include: [{
-                model: Event,
-                limit: size,
-                offset: (page - 1) * size,
+                model: Event,as :'event',
+                where: additionalFilters,
+                include: [
+                    {model: EventImage, as: 'eventImages'},
+                ]
             }],
+            limit: size,
+            offset: (page - 1) * size,
         });
-        const events = invitations.map(invitation => invitation.Event);
-        const pastEvents = [];
-        const upcomingEvents = [];
-        events.forEach(event => {
-            const endTime = new Date(event.dataValues.endTime);
-            const startTime = new Date(event.dataValues.startTime);
-
-            if (endTime < new Date()) {
-                pastEvents.push(event);
-            } else if (startTime > new Date()) {
-                upcomingEvents.push(event);
-            }
-        });
-        return res.status(200).json({pastEvents: pastEvents, upcomingEvents: upcomingEvents});
+        events = invitations.map(invitation => invitation.event);
+        return res.status(200).json({events});
     } catch (error) {
         console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
