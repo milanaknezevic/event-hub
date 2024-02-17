@@ -196,7 +196,7 @@ const getAllOrganizerEvents = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
-const getAllEventGuests = async (req, res) => {
+const getAllEventGuests = async (req, res) => { //vraca sve goste na dogadjaju i neprihvacene pozivnice koje je poslao organizator
     try {
         let eventId = req.params.eventId;
         let statusOption = req.query.status;

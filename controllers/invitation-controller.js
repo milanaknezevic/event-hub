@@ -2,12 +2,28 @@ const Invitation = require("../models/invitation");
 const Event = require("../models/event");
 const User = require("../models/user");
 const {USER_ROLES, USER_STATUS} = require("../models/enums");
+const Sequelize = require("sequelize");
 
 const createInvitation = async (req, res) => {
     try {
-        let eventId = req.params
+        let {eventId, userId} = req.params
+
+        const existingInvitation = await Invitation.findOne({
+            where: {
+                user_id: userId,
+                event_id: eventId,
+            },
+        });
+
+        if (existingInvitation) {
+            return res.status(409).json({
+                success: false,
+                message: 'Invitation already exists for the specified user and event.'
+            });
+        }
+
         const invitationData = {
-            user_id: req.user.id,
+            user_id: userId,
             event_id: eventId,
             statusCreator: req.user.role === 0,
             statusGuest: req.user.role === 2
@@ -25,6 +41,7 @@ const createInvitation = async (req, res) => {
 const acceptInvitationGuest = async (req, res) => {
     try {
         let eventId = req.params
+        let accept = req.query.accept;
         const existingInvitation = await Invitation.findOne({
             where: {
                 user_id: req.user.id,
@@ -34,9 +51,20 @@ const acceptInvitationGuest = async (req, res) => {
             }
         });
         if (existingInvitation) {
-            existingInvitation.statusGuest = true;
-            await existingInvitation.save();
-            res.status(200).json({success: true, message: 'Invitation successfully updated.'})
+            switch (accept) {
+                case true:
+                    existingInvitation.statusGuest = true;
+                    await existingInvitation.save();
+                    res.status(200).json({success: true, message: 'Invitation successfully accepted.'})
+                    break;
+                case false:
+                    await existingInvitation.destroy();
+                    res.status(204).json({success: true, message: 'Invitation successfully declined and deleted.'});
+                    break;
+                default:
+                    break;
+            }
+
         } else {
             res.status(404).json({success: false, message: 'Invitation not found.'});
         }
@@ -47,19 +75,31 @@ const acceptInvitationGuest = async (req, res) => {
 }
 const acceptInvitationCreator = async (req, res) => {
     try {
-        let  eventId = req.params
+        let {eventId, userId} = req.params
+        let accept = req.query.accept;
         const existingInvitation = await Invitation.findOne({
             where: {
-                user_id: req.user.id,
+                user_id: userId,
                 event_id: eventId,
-                statusCreator:false,
-                statusGuest:true
+                statusCreator: false,
+                statusGuest: true
             }
         });
         if (existingInvitation) {
-            existingInvitation.statusCreator = true;
-            await existingInvitation.save();
-            res.status(200).json({success: true, message: 'Invitation successfully updated.'})
+            switch (accept) {
+                case true:
+                    existingInvitation.statusCreator = true;
+                    await existingInvitation.save();
+                    res.status(200).json({success: true, message: 'Invitation successfully updated.'})
+                    break;
+                case false:
+                    await existingInvitation.destroy();
+                    res.status(204).json({success: true, message: 'Invitation successfully declined and deleted.'});
+                    break;
+                default:
+                    break;
+
+            }
         } else {
             res.status(404).json({success: false, message: 'Invitation not found.'});
         }
@@ -110,7 +150,61 @@ const getInvitationById = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
+const getAllUnacceptedInvitationsForOrganizer = async (req, res) => {
+    try {
+        let organizerId = req.user.id
+        const invitations = await Invitation.findAll({
+            where: {
+                statusCreator: false,
+                statusGuest: true,
+            },
+            include: [{
+                model: User,
+                as: 'invitedUser',
+            }, {
+                model: Event,
+                as: 'event',
+                where: {
+                    creator_id: organizerId,
+                    startTime: {[Sequelize.Op.gt]: new Date()}
+                }
+            }],
+            attributes: {exclude: ['user_id', 'event_id']},
+        });
+        res.status(200).send(invitations)
 
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+
+}
+const getAllUnacceptedInvitationsForClient = async (req, res) => {
+    try {
+        let clientId = req.user.id
+        const invitations = await Invitation.findAll({
+            where: {
+                statusCreator: true,
+                statusGuest: false,
+                user_id: clientId
+            },
+            include: [{
+                model: Event,
+                as: 'event',
+                where: {
+                    startTime: {[Sequelize.Op.gt]: new Date()}
+                }
+            }],
+            attributes: {exclude: ['event_id']},
+        });
+        res.status(200).send(invitations)
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+
+}
 
 const getInvitationsByEventId = async (req, res) => {
     try {
@@ -148,6 +242,8 @@ const getInvitationsByEventId = async (req, res) => {
 }
 module.exports = {
     createInvitation,
+    getAllUnacceptedInvitationsForOrganizer,
+    getAllUnacceptedInvitationsForClient,
     acceptInvitationGuest,
     acceptInvitationCreator,
     getInvitationById,
