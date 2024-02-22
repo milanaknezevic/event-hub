@@ -242,7 +242,7 @@ const getAllEventGuests = async (req, res) => { //vraca sve goste na dogadjaju i
 };
 const registerUser = async (req, res) => {
     try {
-        const {name, lastname, email, username, password, phoneNumber, role, status, avatar} = req.body;
+        const {name, lastname, email, username, password, phoneNumber, role, avatar} = req.body;
 
         const verifyEmail = await User.findOne({where: {email}});
         const verifyUsername = await User.findOne({where: {username}});
@@ -262,7 +262,7 @@ const registerUser = async (req, res) => {
             password: hash,
             phoneNumber,
             role,
-            status,
+            status:USER_STATUS.REQUESTED,
             avatar,
         };
 

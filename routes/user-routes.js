@@ -1,9 +1,11 @@
 const userController = require('../controllers/user-controller')
 const {verifyUserToken, IsSupport, IsOrganizer,} = require("../middleware/auth");
 const router = require('express').Router()
+const validation = require('../middleware/validationMiddleware')
+const userSchema = require('../validation/userValidation')
 
 router.post('/', userController.registerUser)
-router.post('/login', userController.login);
+router.post('/login',validation(userSchema.loginSchema), userController.login);
 
 router.get('/', verifyUserToken, IsSupport, userController.getAllUsers) //admin(support) moze pregledati sve korisnike
 router.delete('/:id', verifyUserToken, IsSupport, userController.deleteUser)

@@ -15,7 +15,6 @@ const commentRouter = require('./routes/comment-routes')
 const invitationRouter = require('./routes/invitation-routes')
 const ticketRouter = require('./routes/ticket-routes')
 
-
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
 app.use(cors(corsOption))
@@ -28,9 +27,5 @@ app.use('/api/users', userRouter)
 app.use('/api/invitations', invitationRouter)
 app.use('/api/tickets', ticketRouter)
 
-app.get('/', (req, res) => {
-    res.send("hello2")
-})
-app.listen(process.env.PORT, () => {
-    console.log("milana")
-})
+
+app.listen(process.env.PORT)
