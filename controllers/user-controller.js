@@ -7,6 +7,9 @@ const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
 const EventType = require("../models/eventType");
 const EventImage = require("../models/eventImage");
+const fs = require('fs');
+const path = require('path');
+const {v4: uuidv4} = require('uuid');
 
 
 const addUser = async (req, res) => {
@@ -242,17 +245,35 @@ const getAllEventGuests = async (req, res) => { //vraca sve goste na dogadjaju i
 };
 const registerUser = async (req, res) => {
     try {
+
         const {name, lastname, email, username, password, phoneNumber, role, avatar} = req.body;
 
         const verifyEmail = await User.findOne({where: {email}});
         const verifyUsername = await User.findOne({where: {username}});
 
         if (verifyEmail) {
-            return res.status(403).json({message: 'Email already used'});
+            // Dodajte grešku u formatu Yup validacije
+            res.status(400).json({
+                errors: [
+                    {
+                        field: 'email',
+                        message: 'Email already exists',
+                    },
+                ],
+            });
+            return;
         } else if (verifyUsername) {
-            return res.status(403).json({message: 'Username already used'});
+            // Dodajte grešku u formatu Yup validacije
+            res.status(400).json({
+                errors: [
+                    {
+                        field: 'username',
+                        message: 'Username already exists',
+                    },
+                ],
+            });
+            return;
         }
-
         const hash = await bcrypt.hash(password, 10);
         const userData = {
             name,
@@ -262,7 +283,7 @@ const registerUser = async (req, res) => {
             password: hash,
             phoneNumber,
             role,
-            status:USER_STATUS.REQUESTED,
+            status: USER_STATUS.REQUESTED,
             avatar,
         };
 
@@ -274,7 +295,7 @@ const registerUser = async (req, res) => {
         };
         delete mappedUser.password
         res.status(201).json({
-            message: 'User added succesfuly',
+            message: 'User registred succesfuly',
             mappedUser
         });
     } catch (error) {
@@ -319,8 +340,39 @@ const login = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+const getUserRoles = async (req, res) => {
+    try {
+        const userRolesArray = Object.keys(USER_ROLES)
+            .map(key => ({key: USER_ROLES[key], value: key}))
+            .filter(role => role.key !== 1);
+        res.json(userRolesArray);
+    } catch (error) {
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
+const getUserRolesForAdmin = async (req, res) => {
+    try {
+        const userRolesArray = Object.keys(USER_ROLES).map(key => ({key: USER_ROLES[key], value: key}));
+        res.json(userRolesArray);
+    } catch (error) {
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
+const uploadAvatar = async (req, res) => {
+    try {
+        const dir = process.env.AVATAR_DIR;
+        const imageName = uuidv4() + '_' + req.file.originalname;
+        const imagePath = path.join(dir, imageName);
+        fs.writeFileSync(imagePath, req.file.buffer);
+        res.status(200).json({imageName});
+    } catch (error) {
+        console.log("err ", error)
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
 
 module.exports = {
+    uploadAvatar,
     registerUser,
     getAllUsers,
     addUser,
@@ -331,5 +383,7 @@ module.exports = {
     deleteUser,
     getUserById,
     getAllEventGuests,
-    login
+    login,
+    getUserRoles,
+    getUserRolesForAdmin
 };
