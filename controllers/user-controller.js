@@ -284,6 +284,13 @@ const registerUser = async (req, res) => {
             status: USER_STATUS.REQUESTED,
             avatar,
         };
+        if (req.body.avatar) {
+            const {type, data} = req.body.buffer;
+            const bufferData = Buffer.from(data, type);
+            const dir = process.env.AVATAR_DIR;
+            const imagePath = path.join(dir, req.body.avatar);
+            fs.writeFileSync(imagePath, bufferData);
+        }
 
         const newUser = await User.create(userData);
         const mappedUser = {
@@ -358,11 +365,8 @@ const getUserRolesForAdmin = async (req, res) => {
 };
 const uploadAvatar = async (req, res) => {
     try {
-        const dir = process.env.AVATAR_DIR;
         const imageName = uuidv4() + '_' + req.file.originalname;
-        const imagePath = path.join(dir, imageName);
-        fs.writeFileSync(imagePath, req.file.buffer);
-        res.status(200).json({imageName});
+        res.status(200).json({success: true, imageName, buffer: req.file.buffer});
     } catch (error) {
         console.log("err ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});

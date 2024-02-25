@@ -15,6 +15,7 @@ const commentRouter = require('./routes/comment-routes')
 const invitationRouter = require('./routes/invitation-routes')
 const ticketRouter = require('./routes/ticket-routes')
 
+app.use(express.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
 app.use(cors(corsOption))
