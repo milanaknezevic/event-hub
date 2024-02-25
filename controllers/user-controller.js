@@ -252,7 +252,6 @@ const registerUser = async (req, res) => {
         const verifyUsername = await User.findOne({where: {username}});
 
         if (verifyEmail) {
-            // Dodajte grešku u formatu Yup validacije
             res.status(400).json({
                 errors: [
                     {
@@ -263,7 +262,6 @@ const registerUser = async (req, res) => {
             });
             return;
         } else if (verifyUsername) {
-            // Dodajte grešku u formatu Yup validacije
             res.status(400).json({
                 errors: [
                     {
@@ -311,7 +309,7 @@ const login = async (req, res) => {
         if (!user) {
             return res.status(401).json({message: "Authentication Failed"})
         }
-        let isPasswordValid = bcrypt.compare(password, user.password)
+        let isPasswordValid = await bcrypt.compare(password, user.password)
         if (!isPasswordValid) {
             return res.status(401).json({
                 message: "Authentication Failed"
