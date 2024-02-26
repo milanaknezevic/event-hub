@@ -56,6 +56,17 @@ const getAllUsers = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
+const getLoggedUser = async (req, res) => {
+    try {
+        const token = req.headers.authorization;
+        const tokenWithoutBearer = token.split(' ')[1];
+        const decode = jwt.decode(tokenWithoutBearer)
+        const id = decode.id
+        await getUserById({params: {id: id}}, res);
+    } catch (error) {
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
 const getUserById = async (req, res) => {
     try {
         let id = req.params.id
@@ -387,5 +398,6 @@ module.exports = {
     getAllEventGuests,
     login,
     getUserRoles,
-    getUserRolesForAdmin
+    getUserRolesForAdmin,
+    getLoggedUser
 };
