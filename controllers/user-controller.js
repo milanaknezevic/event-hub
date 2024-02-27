@@ -43,15 +43,25 @@ const addUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
+        const {page = 1, size = 10} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex=page*size
         let users = await User.findAll({
-            attributes: {exclude: ['password']}
+            attributes: {exclude: ['password']},
+            where: {
+                role: {
+                    [Sequelize.Op.not]: USER_ROLES.SUPPORT
+                }
+            },
         });
-        const mappedUsers = users.map(user => ({
+        const respUsers = users.slice(startIndex,endIndex)
+        const mappedUsers = respUsers.map(user => ({
             ...user.dataValues,
             role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
             status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
         }));
-        res.status(200).send(mappedUsers)
+
+        res.status(200).send({users:mappedUsers,total: users.length})
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -322,8 +332,12 @@ const registerUser = async (req, res) => {
 const login = async (req, res) => {
     try {
         const {username, password} = req.body;
-
-        const user = await User.findOne({where: {username: username}});
+        const user = await User.findOne({
+            where: {
+                username: username,
+                status: USER_STATUS.ACTIVE
+            }
+        });
         if (!user) {
             return res.status(401).json({message: "Authentication Failed"})
         }
