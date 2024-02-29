@@ -14,38 +14,75 @@ const {v4: uuidv4} = require('uuid');
 
 const addUser = async (req, res) => {
     try {
+        const {name, lastname, email, username, password, phoneNumber, role, avatar} = req.body;
+        const verifyEmail = await User.findOne({where: {email}});
+        const verifyUsername = await User.findOne({where: {username}});
+
+        if (verifyEmail) {
+            res.status(400).json({
+                errors: [
+                    {
+                        field: 'email',
+                        message: 'Email already exists',
+                    },
+                ],
+            });
+            return;
+        } else if (verifyUsername) {
+            res.status(400).json({
+                errors: [
+                    {
+                        field: 'username',
+                        message: 'Username already exists',
+                    },
+                ],
+            });
+            return;
+        }
+
+        const hash = await bcrypt.hash(password, 10);
         const userData = {
-            name: req.body.name,
-            lastname: req.body.lastname,
-            email: req.body.email,
-            username: req.body.username,
-            password: req.body.password,
-            phoneNumber: req.body.phoneNumber,
-            role: req.body.role,
-            status: req.body.status,
-            avatar: req.body.avatar,
+            name,
+            lastname,
+            email,
+            username,
+            password: hash,
+            phoneNumber,
+            role,
+            status: USER_STATUS.ACTIVE,
+            avatar,
         };
+        if (req.body.avatar) {
+            const {type, data} = req.body.buffer;
+            const bufferData = Buffer.from(data, type);
+            const dir = process.env.AVATAR_DIR;
+            const imagePath = path.join(dir, req.body.avatar);
+            fs.writeFileSync(imagePath, bufferData);
+        }
+
         const newUser = await User.create(userData);
         const mappedUser = {
             ...newUser.dataValues,
             role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === newUser.dataValues.role),
             status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === newUser.dataValues.status),
         };
+        delete mappedUser.password
         res.status(201).json({
             message: 'User added succesfuly',
             mappedUser
         });
     } catch (error) {
-        console.log(error)
+        console.error(error);
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
-}
+};
+
 
 const getAllUsers = async (req, res) => {
     try {
         const {page = 1, size = 10} = req.query;
         const startIndex = (page - 1) * size;
-        const endIndex=page*size
+        const endIndex = page * size
         let users = await User.findAll({
             attributes: {exclude: ['password']},
             where: {
@@ -54,14 +91,14 @@ const getAllUsers = async (req, res) => {
                 }
             },
         });
-        const respUsers = users.slice(startIndex,endIndex)
+        const respUsers = users.slice(startIndex, endIndex)
         const mappedUsers = respUsers.map(user => ({
             ...user.dataValues,
             role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
             status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
         }));
 
-        res.status(200).send({users:mappedUsers,total: users.length})
+        res.status(200).send({users: mappedUsers, total: users.length})
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -115,32 +152,87 @@ const deleteUser = async (req, res) => {
 }
 
 const updateUser = async (req, res) => {
-
     const userId = req.params.id;
-    if (req.user.id !== userId) {
-        return res.status(401).send('Unauthorized request');
-    }
     const updatedProperties = req.body;
 
+    if ('id' in updatedProperties) {
+        delete updatedProperties.id;
+    }
     try {
         const existingUser = await User.findByPk(userId);
 
         if (!existingUser) {
-            return res.status(404).json({success: false, message: 'User not found.'});
+            return res.status(404).json({ success: false, message: 'User not found.' });
         }
-        await existingUser.update(updatedProperties);
-        const mappedUser = {
-            ...existingUser.dataValues,
-            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === existingUser.dataValues.role),
-            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === existingUser.dataValues.status),
-        };
-        delete mappedUser.password
 
-        res.status(200).json({success: true, message: 'User properties updated successfully.', mappedUser});
+        const verifyEmail = await User.findOne({
+            where: {
+                email: updatedProperties.email,
+                id: {
+                    [Sequelize.Op.not]: updatedProperties.id
+                }
+            }
+        });
+        const verifyUsername = await User.findOne({
+            where: {
+                username: updatedProperties.username,
+                id: {
+                    [Sequelize.Op.not]: updatedProperties.id
+                }
+            }
+        });
+
+        if (verifyEmail) {
+            res.status(400).json({
+                errors: [
+                    {
+                        field: 'email',
+                        message: 'Email already exists',
+                    },
+                ],
+            });
+            return;
+        } else if (verifyUsername) {
+            res.status(400).json({
+                errors: [
+                    {
+                        field: 'username',
+                        message: 'Username already exists',
+                    },
+                ],
+            });
+            return;
+        }
+
+        await User.update(updatedProperties, {
+            where: { id: existingUser.id }
+        });
+
+        const updatedUser = await User.findByPk(existingUser.id);
+
+        const mappedUser = {
+            ...updatedUser.dataValues,
+            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === updatedUser.dataValues.role),
+            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === updatedUser.dataValues.status),
+        };
+        delete mappedUser.password;
+
+        res.status(200).json({
+            success: true,
+            message: 'User updated successfully',
+            user: mappedUser,
+        });
+
     } catch (error) {
-        res.status(500).json({success: false, message: 'Internal server error.'});
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal Server Error',
+        });
     }
 };
+
+
 
 const getAllEventsByCreatorId = async (req, res) => {
     try {
@@ -329,6 +421,7 @@ const registerUser = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+
 const login = async (req, res) => {
     try {
         const {username, password} = req.body;
@@ -388,6 +481,14 @@ const getUserRolesForAdmin = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+const getUserStatus = async (req, res) => {
+    try {
+        const userStatusArray = Object.keys(USER_STATUS).map(key => ({key: USER_STATUS[key], value: key}));
+        res.json(userStatusArray);
+    } catch (error) {
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
 const uploadAvatar = async (req, res) => {
     try {
         const imageName = uuidv4() + '_' + req.file.originalname;
@@ -413,5 +514,6 @@ module.exports = {
     login,
     getUserRoles,
     getUserRolesForAdmin,
-    getLoggedUser
+    getLoggedUser,
+    getUserStatus
 };
