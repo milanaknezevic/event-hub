@@ -11,7 +11,7 @@ router.post('/add_user', verifyUserToken,IsSupport, validation(userSchema.regist
 router.post('/login',validation(userSchema.loginSchema), userController.login);
 router.post('/upload_avatar',upload.single('file'), userController.uploadAvatar);
 router.get('/', verifyUserToken, IsSupport, userController.getAllUsers) //admin(support) moze pregledati sve korisnike
-router.delete('/:id', verifyUserToken, IsSupport, userController.deleteUser)
+router.patch('/delete/:id', verifyUserToken, IsSupport, userController.deleteUser)
 router.get('/user/roles', userController.getUserRoles)
 router.get('/adminRoles',verifyUserToken,IsSupport, userController.getUserRolesForAdmin)
 router.get('/userStatus',verifyUserToken,IsSupport, userController.getUserStatus)

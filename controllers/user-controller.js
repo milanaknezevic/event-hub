@@ -90,6 +90,9 @@ const getAllUsers = async (req, res) => {
                     [Sequelize.Op.not]: USER_ROLES.SUPPORT
                 }
             },
+            order: [
+                ['id', 'DESC']
+            ],
         });
         const respUsers = users.slice(startIndex, endIndex)
         const mappedUsers = respUsers.map(user => ({
@@ -143,26 +146,31 @@ const updateAllPropertiesUser = async (req, res) => {
 }
 const deleteUser = async (req, res) => {
     try {
-        let id = req.params.id
-        await User.destroy({where: {id: id}})
+        const {id} = req.params;
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({error: 'User not found'});
+        }
+        user.status = USER_STATUS.BLOCKED;
+
+        await user.save();
         res.status(200).send('User is deleted!')
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
 
+
 const updateUser = async (req, res) => {
     const userId = req.params.id;
     const updatedProperties = req.body;
 
-    if ('id' in updatedProperties) {
-        delete updatedProperties.id;
-    }
+
     try {
         const existingUser = await User.findByPk(userId);
 
         if (!existingUser) {
-            return res.status(404).json({ success: false, message: 'User not found.' });
+            return res.status(404).json({success: false, message: 'User not found.'});
         }
 
         const verifyEmail = await User.findOne({
@@ -203,9 +211,12 @@ const updateUser = async (req, res) => {
             });
             return;
         }
+        if ('id' in updatedProperties) {
+            delete updatedProperties.id;
+        }
 
         await User.update(updatedProperties, {
-            where: { id: existingUser.id }
+            where: {id: existingUser.id}
         });
 
         const updatedUser = await User.findByPk(existingUser.id);
@@ -231,7 +242,6 @@ const updateUser = async (req, res) => {
         });
     }
 };
-
 
 
 const getAllEventsByCreatorId = async (req, res) => {
@@ -508,12 +518,12 @@ module.exports = {
     getAllEventsByCreatorId,
     getAllOrganizerEvents,
     updateUser,
-    deleteUser,
     getUserById,
     getAllEventGuests,
     login,
     getUserRoles,
     getUserRolesForAdmin,
     getLoggedUser,
-    getUserStatus
+    getUserStatus,
+    deleteUser
 };
