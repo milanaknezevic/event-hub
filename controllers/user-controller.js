@@ -80,32 +80,48 @@ const addUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const {page = 1, size = 10} = req.query;
+        const { page = 1, size = 10, search } = req.query;
         const startIndex = (page - 1) * size;
-        const endIndex = page * size
+        const endIndex = page * size;
+
+        console.log("search ", search)
+        let whereClause = {
+            role: {
+                [Sequelize.Op.not]: USER_ROLES.SUPPORT
+            }
+        };
+
+        if (search) {
+            whereClause = {
+                ...whereClause,
+                [Sequelize.Op.or]: [
+                    { username: { [Sequelize.Op.iLike]: `%${search}%` } },
+                    { email: { [Sequelize.Op.iLike]: `%${search}%` } },
+                    { name: { [Sequelize.Op.iLike]: `%${search}%` } },
+                    { lastname: { [Sequelize.Op.iLike]: `%${search}%` } },
+                ]
+            };
+        }
+
         let users = await User.findAll({
-            attributes: {exclude: ['password']},
-            where: {
-                role: {
-                    [Sequelize.Op.not]: USER_ROLES.SUPPORT
-                }
-            },
-            order: [
-                ['id', 'DESC']
-            ],
+            attributes: { exclude: ['password'] },
+            where: whereClause,
+            order: [['id', 'DESC']],
         });
-        const respUsers = users.slice(startIndex, endIndex)
+
+        const respUsers = users.slice(startIndex, endIndex);
         const mappedUsers = respUsers.map(user => ({
             ...user.dataValues,
             role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
             status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
         }));
 
-        res.status(200).send({users: mappedUsers, total: users.length})
+        res.status(200).send({ users: mappedUsers, total: users.length });
     } catch (error) {
-        res.status(500).json({success: false, message: 'Internal server error.'});
+        res.status(500).json({ success: false, message: 'Internal server error.' });
     }
-}
+};
+
 const getLoggedUser = async (req, res) => {
     try {
         const token = req.headers.authorization;
