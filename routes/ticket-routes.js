@@ -10,8 +10,8 @@ router.post('/', verifyUserToken, IsOrganizerOrClient, ticketController.createTi
 router.get('user/:id', verifyUserToken, IsClient, ticketController.getTicketsByUserId);//api/tickets/user/id usera?replied=0
 // admin vidi sve otvorene tikete
 router.get('/', verifyUserToken, IsSupport, ticketController.getAllTickets);
-router.put('/support/:supportId/:ticketId', verifyUserToken, IsSupport, ticketController.assignToTicket)
-router.put('/reply/:supportId/:ticketId', verifyUserToken, IsSupport, ticketController.replyToTicket)
+router.put('/support/:ticketId', verifyUserToken, IsSupport, ticketController.assignToTicket)
+router.put('/reply/:ticketId', verifyUserToken, IsSupport, ticketController.replyToTicket)
 
 router.get('/ticket/status', verifyUserToken, IsSupport, ticketController.getTicketStatus)
 router.get('/ticket/priority', verifyUserToken, IsSupport, ticketController.getTicketPriority)

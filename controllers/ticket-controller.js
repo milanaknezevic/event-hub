@@ -1,31 +1,38 @@
 const Ticket = require("../models/ticket");
 const {PRIORITY, STATUS, USER_ROLES, USER_STATUS} = require("../models/enums");
 const User = require("../models/user");
+const {Sequelize} = require("sequelize");
 const getAllTickets = async (req, res) => {
     try {
         const {page = 1, size = 10, status, priority} = req.query;
         const startIndex = (page - 1) * size;
         const endIndex = page * size;
-
+        const userId = req.user.id;
         let whereClause = {};
-
-        const statusNumber = parseInt(status);
-        if(statusNumber !==0){
-          whereClause.support_id=req.user.id
+        whereClause = {
+            [Sequelize.Op.or]: [
+                {status: STATUS.OPENED},
+                {
+                    status: {
+                        [Sequelize.Op.in]: [STATUS.CLOSED, STATUS.IN_PROGRESS]
+                    },
+                    support_id: userId
+                }
+            ]
         }
-        if (!isNaN(statusNumber)) {
-            whereClause.status = statusNumber;
-        }
-        if (priority !== undefined) {
-            const priorityNumber = parseInt(priority);
-            if (!isNaN(priorityNumber)) {
-                whereClause.priority = priorityNumber;
-            }
-        }
-
         let tickets = await Ticket.findAll({
-            where: whereClause
+            where: whereClause,
+            order: [['status', 'ASC']],
         });
+
+
+        if (status !== '') {
+            tickets = tickets.filter(e => e.dataValues.status == status);
+        }
+
+        if (priority !== '') {
+            tickets = tickets.filter(e => e.dataValues.priority == priority);
+        }
 
         const respTickets = tickets.slice(startIndex, endIndex);
 
@@ -90,7 +97,7 @@ const getTicketById = async (req, res) => {
     try {
         let id = req.params.id
         let ticket = await Ticket.findOne({
-            where: { id: id },
+            where: {id: id},
             include: [
                 {
                     model: User,
@@ -112,7 +119,7 @@ const getTicketById = async (req, res) => {
 
     } catch (error) {
         console.log("greska ", error)
-        res.status(500).json({ success: false, message: 'Internal server error.' });
+        res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
 
@@ -167,18 +174,26 @@ const createTicket = async (req, res) => {
 };
 const assignToTicket = async (req, res) => {
     try {
-        let ticketId = req.params
+        let {ticketId} = req.params
+        const numericTicketId = parseInt(ticketId);
         const existingTicket = await Ticket.findOne({
             where: {
-                id: ticketId,
+                id: numericTicketId,
             }
         });
         if (existingTicket) {
             existingTicket.support_id = req.user.id;
-            existingTicket.status = 2;//in progress
+            existingTicket.status = 1;//in progress
             await existingTicket.save();
-            res.status(200).json({success: true, message: 'Ticket successfully assigned to support.'})
+            const resp = Object.keys(STATUS).find(key => STATUS[key] === existingTicket.dataValues.status);
+
+            res.status(200).json({
+                success: true,
+                message: 'Ticket successfully assigned to support.',
+                status: resp
+            })
         } else {
+
             res.status(404).json({success: false, message: 'Ticket not found.'});
         }
 
@@ -188,13 +203,15 @@ const assignToTicket = async (req, res) => {
 }
 const replyToTicket = async (req, res) => {
     try {
-        let ticketId = req.params
+        let {ticketId} = req.params
         const answer = req.body.answer;
+        const numericTicketId = parseInt(ticketId);
         const existingTicket = await Ticket.findOne({
             where: {
-                id: ticketId,
+                id: numericTicketId,
             }
         });
+
         if (existingTicket) {
             existingTicket.support_id = req.user.id;
             existingTicket.answer = answer;
