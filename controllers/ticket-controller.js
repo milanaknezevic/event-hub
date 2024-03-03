@@ -1,20 +1,64 @@
 const Ticket = require("../models/ticket");
-const { PRIORITY, STATUS} = require("../models/enums");
+const {PRIORITY, STATUS, USER_ROLES, USER_STATUS} = require("../models/enums");
+const User = require("../models/user");
 const getAllTickets = async (req, res) => {
     try {
-        let tickets = await Ticket.findAll({
-            where: {
-                status: 0,
+        const {page = 1, size = 10, status, priority} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex = page * size;
+
+        let whereClause = {};
+
+        const statusNumber = parseInt(status);
+        if(statusNumber !==0){
+          whereClause.support_id=req.user.id
+        }
+        if (!isNaN(statusNumber)) {
+            whereClause.status = statusNumber;
+        }
+        if (priority !== undefined) {
+            const priorityNumber = parseInt(priority);
+            if (!isNaN(priorityNumber)) {
+                whereClause.priority = priorityNumber;
             }
+        }
+
+        let tickets = await Ticket.findAll({
+            where: whereClause
         });
-        const mappedTickets = tickets.map(ticket => ({
+
+        const respTickets = tickets.slice(startIndex, endIndex);
+
+        const mappedTickets = respTickets.map(ticket => ({
             ...ticket.dataValues,
             priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === ticket.dataValues.priority),
             status: Object.keys(STATUS).find(key => STATUS[key] === ticket.dataValues.status),
         }));
-        res.status(200).send({mappedTickets});
+
+        res.status(200).send({tickets: mappedTickets, total: tickets.length});
     } catch (error) {
-        console.log(error)
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
+
+
+const getTicketPriority = async (req, res) => {
+    try {
+        const ticketPriorityArray = Object.keys(PRIORITY)
+            .map(key => ({key: PRIORITY[key], value: key}))
+
+        res.json(ticketPriorityArray);
+    } catch (error) {
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+}
+const getTicketStatus = async (req, res) => {
+    try {
+        const ticketStatusArray = Object.keys(STATUS)
+            .map(key => ({key: STATUS[key], value: key}))
+
+        res.json(ticketStatusArray);
+    } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -23,10 +67,10 @@ const getTicketsByAdminId = async (req, res) => {
         let id = req.params.id;
         let tickets;
         switch (req.query.replied) {
-            case 1: //procitano tj odgovoreno tj closed
+            case 2: //procitano tj odgovoreno tj closed
                 tickets = await Ticket.findAll({where: {support_id: id, status: 1}})
                 break;
-            case 2://in porogress stavio na sebe nije odgovorio
+            case 1://in porogress stavio na sebe nije odgovorio
                 tickets = await Ticket.findAll({where: {support_id: id, status: 2}})
                 break;
             default:
@@ -42,6 +86,36 @@ const getTicketsByAdminId = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
+const getTicketById = async (req, res) => {
+    try {
+        let id = req.params.id
+        let ticket = await Ticket.findOne({
+            where: { id: id },
+            include: [
+                {
+                    model: User,
+                    as: 'createdTicket',
+                },
+                {
+                    model: User,
+                    as: 'assignedToTicket',
+                }
+            ],
+            attributes: {exclude: ['client_id', 'support_id']},
+        });
+        const mappedTicket = {
+            ...ticket.dataValues,
+            priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === ticket.dataValues.priority),
+            status: Object.keys(STATUS).find(key => STATUS[key] === ticket.dataValues.status),
+        };
+        res.status(200).send(mappedTicket)
+
+    } catch (error) {
+        console.log("greska ", error)
+        res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+}
+
 const getTicketsByUserId = async (req, res) => {
     try {
         let id = req.params.id;
@@ -54,7 +128,7 @@ const getTicketsByUserId = async (req, res) => {
                 tickets = await Ticket.findAll({where: {client_id: id, status: 2}})
                 break;
             default: //open tiketi
-                tickets = await Ticket.findAll({where: {client_id: id, status:0}})
+                tickets = await Ticket.findAll({where: {client_id: id, status: 0}})
                 break;
         }
 
@@ -88,7 +162,6 @@ const createTicket = async (req, res) => {
             ticket: mappedTicket,
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -110,7 +183,6 @@ const assignToTicket = async (req, res) => {
         }
 
     } catch (error) {
-        console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -118,7 +190,6 @@ const replyToTicket = async (req, res) => {
     try {
         let ticketId = req.params
         const answer = req.body.answer;
-        console.log(answer)
         const existingTicket = await Ticket.findOne({
             where: {
                 id: ticketId,
@@ -127,7 +198,7 @@ const replyToTicket = async (req, res) => {
         if (existingTicket) {
             existingTicket.support_id = req.user.id;
             existingTicket.answer = answer;
-            existingTicket.status = 1;//closed
+            existingTicket.status = 2;//closed
             await existingTicket.save();
             res.status(200).json({success: true, message: 'Ticket successfully assigned to support and replied.'})
         } else {
@@ -135,7 +206,6 @@ const replyToTicket = async (req, res) => {
         }
 
     } catch (error) {
-       // console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -146,6 +216,9 @@ module.exports = {
     getTicketsByAdminId,
     getTicketsByUserId,
     assignToTicket,
-    replyToTicket
+    replyToTicket,
+    getTicketStatus,
+    getTicketPriority,
+    getTicketById
 
 }

@@ -72,7 +72,6 @@ const addUser = async (req, res) => {
             mappedUser
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -84,7 +83,6 @@ const getAllUsers = async (req, res) => {
         const startIndex = (page - 1) * size;
         const endIndex = page * size;
 
-        console.log("search ", search)
         let whereClause = {
             role: {
                 [Sequelize.Op.not]: USER_ROLES.SUPPORT
@@ -251,7 +249,6 @@ const updateUser = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
         res.status(500).json({
             success: false,
             message: 'Internal Server Error',
@@ -276,7 +273,6 @@ const getAllEventsByCreatorId = async (req, res) => {
 
         return res.status(200).json({success: true, events: events});
     } catch (error) {
-        console.error('Error:', error);
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -334,7 +330,6 @@ const getAllOrganizerEvents = async (req, res) => {
 
         return res.status(200).json({success: true, events: events});
     } catch (error) {
-        console.error('Error:', error);
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -378,7 +373,6 @@ const getAllEventGuests = async (req, res) => { //vraca sve goste na dogadjaju i
 
         return res.status(200).json({users: mappedUsers});
     } catch (error) {
-        console.error('Error:', error);
         res.status(500).json({message: 'Internal server error.'});
     }
 };
@@ -443,7 +437,7 @@ const registerUser = async (req, res) => {
             mappedUser
         });
     } catch (error) {
-        console.error(error);
+
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -474,7 +468,7 @@ const login = async (req, res) => {
                 },
                 process.env.JWT_SECRET,
                 {
-                    expiresIn: "1h",
+                    expiresIn: "3600s",
                 }
             )
             return res.status(200).json({
@@ -485,7 +479,7 @@ const login = async (req, res) => {
 
         }
     } catch (error) {
-        console.error(error);
+
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -520,7 +514,7 @@ const uploadAvatar = async (req, res) => {
         const imageName = uuidv4() + '_' + req.file.originalname;
         res.status(200).json({success: true, imageName, buffer: req.file.buffer});
     } catch (error) {
-        console.log("err ", error)
+
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };

@@ -23,16 +23,6 @@ const registrationSchema = yup.object().shape({
     role: yup.string().required('Required'),
 });
 
-// async function checkUsernameExists(username) {
-//     try {
-//         const user = await User.findOne({ where: { username } });
-//         console.log("user ", user);
-//         return !!user; // If user is found, return true; otherwise, return false
-//     } catch (error) {
-//         console.error('Error checking username existence:', error);
-//         throw new Error('Error checking username existence');
-//     }
-// }
 
 module.exports = {
     loginSchema,

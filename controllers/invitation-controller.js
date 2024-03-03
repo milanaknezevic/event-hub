@@ -34,7 +34,6 @@ const createInvitation = async (req, res) => {
             invitation: newInvitation
         });
     } catch (error) {
-        console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -174,7 +173,7 @@ const getAllUnacceptedInvitationsForOrganizer = async (req, res) => {
         res.status(200).send(invitations)
 
     } catch (error) {
-        console.log(error)
+
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 
@@ -200,7 +199,6 @@ const getAllUnacceptedInvitationsForClient = async (req, res) => {
         res.status(200).send(invitations)
 
     } catch (error) {
-        console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 
@@ -236,7 +234,6 @@ const getInvitationsByEventId = async (req, res) => {
             res.status(404).json({success: false, message: 'Event not found.'});
         }
     } catch (error) {
-        console.log(error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }

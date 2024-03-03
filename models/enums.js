@@ -11,8 +11,8 @@ const USER_STATUS = {
 };
 const STATUS = {
     OPENED: 0,
-    CLOSED: 1,
-    IN_PROGRESS: 2,
+    IN_PROGRESS: 1,
+    CLOSED: 2,
 };
 
 const PRIORITY = {
