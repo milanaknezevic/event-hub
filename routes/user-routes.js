@@ -16,7 +16,7 @@ router.get('/user/roles', userController.getUserRoles)
 router.get('/adminRoles',verifyUserToken,IsSupport, userController.getUserRolesForAdmin)
 router.get('/userStatus',verifyUserToken,IsSupport, userController.getUserStatus)
 router.get('/guests/:eventId', verifyUserToken, IsOrganizer, userController.getAllEventGuests);//api/users/guests/6?status=false
-router.get('/:creatorId/events', verifyUserToken, IsOrganizer, userController.getAllOrganizerEvents)//api/users/2/events?status=1
+router.get('/organizer_events', verifyUserToken, IsOrganizer, userController.getAllOrganizerEvents)//api/users/2/events?status=1
 router.patch('/:id', verifyUserToken, userController.updateUser)
 router.get('/:id', verifyUserToken, userController.getUserById)
 router.get('/user/logged',verifyUserToken, userController.getLoggedUser)

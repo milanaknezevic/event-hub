@@ -18,7 +18,7 @@ const addLocation = async (req, res) => {
 const getAllLocations = async (req, res) => {
     try {
         let locations = await Location.findAll({});
-       res.status(200).send({ locations });
+       res.status(200).send( locations );
     } catch (error) {
        res.status(500).json({ success: false, message: 'Internal server error.' });
     }

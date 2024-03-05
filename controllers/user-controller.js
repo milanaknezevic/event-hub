@@ -278,8 +278,11 @@ const getAllEventsByCreatorId = async (req, res) => {
 };
 const getAllOrganizerEvents = async (req, res) => {
     try {
-        let creatorId = req.params.creatorId;
-        const {page = 1, size = 10, name, locationId, eventTypeId, status} = req.query;
+        let creatorId = req.user.id;
+        const {page = 1, size = 10, search, locationId, eventTypeId, status} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex = page * size;
+
         let statusOption = parseInt(status, 10);
 
         let events;
@@ -307,16 +310,16 @@ const getAllOrganizerEvents = async (req, res) => {
             ...dateFilter,
         };
 
-        if (locationId) {
-            additionalFilters.location_id = locationId;
+        if (locationId !=="") {
+            additionalFilters.location_id = parseInt(locationId);
         }
 
-        if (eventTypeId) {
-            additionalFilters.event_type_id = eventTypeId;
+        if (eventTypeId !=="")  {
+            additionalFilters.eventType_id = parseInt(eventTypeId);
         }
 
-        if (name) {
-            additionalFilters.name = {[Sequelize.Op.iLike]: `%${name}%`};
+        if (search) {
+            additionalFilters.name = {[Sequelize.Op.iLike]: `%${search}%`};
         }
 
         events = await Event.findAll({
@@ -324,11 +327,10 @@ const getAllOrganizerEvents = async (req, res) => {
             include: [
                 {model: EventImage, as: 'eventImages'},
             ],
-            limit: size,
-            offset: (page - 1) * size,
         });
+        const respEvents = events.slice(startIndex, endIndex);
 
-        return res.status(200).json({success: true, events: events});
+        res.status(200).send({ events: respEvents, total: events.length });
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }

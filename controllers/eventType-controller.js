@@ -18,7 +18,8 @@ const addEventType = async (req, res) => {
 const getAllEventTypes = async (req, res) => {
     try {
         let eventTypes = await EventType.findAll({});
-        res.status(200).send({ eventTypes });
+        res.json(eventTypes);
+        // res.status(200).send({ eventTypes });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Internal server error.' });
     }
