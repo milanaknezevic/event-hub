@@ -335,49 +335,66 @@ const getAllOrganizerEvents = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
-const getAllEventGuests = async (req, res) => { //vraca sve goste na dogadjaju i neprihvacene pozivnice koje je poslao organizator
+const getAllEventGuests = async (req, res) => {
     try {
         let eventId = req.params.eventId;
         let statusOption = req.query.status;
         let invitations;
         switch (statusOption) {
-            case true:
+            case "true":
                 invitations = await Invitation.findAll({
                     where: {
                         event_id: eventId,
                         statusCreator: true,
                         statusGuest: true,
                     },
-                    include: [User]
+                    include: [{ model: User, as: 'invitedUser' }]
                 });
                 break;
-            case false:
+            case "false":
                 invitations = await Invitation.findAll({
                     where: {
                         event_id: eventId,
                         statusCreator: true,
                         statusGuest: false,
                     },
-                    include: [User]
+                    include: [{
+                        model: User,
+                        as: 'invitedUser',
+                    },
+                        {
+                            model: Event,
+                            as: 'event',
+                        }
+                    ],
                 });
                 break;
             default:
-                return res.status(400).json({error: 'Invalid status option.'});
-
+                return res.status(400).json({ error: 'Invalid status option.' });
         }
-        const users = invitations.map(invitation => invitation.User);
-
-        const mappedUsers = users.map(user => ({
-            ...user.dataValues,
-            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
-            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
+        // const users = invitations.map(invitation => invitation.invitedUser); // Update mapping with the alias
+        //
+        // const mappedUsers = users.map(user => ({
+        //     ...user.dataValues,
+        //     role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
+        //     status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
+        // }));
+        const mappedInvitations = invitations.map(invitation => ({
+            ...invitation.dataValues,
+            invitedUser: {
+                ...invitation.invitedUser.dataValues,
+                role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === invitation.invitedUser.dataValues.role),
+                status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === invitation.invitedUser.dataValues.status),
+            },
         }));
 
-        return res.status(200).json({users: mappedUsers});
+        return res.status(200).json({ invitations: mappedInvitations });
     } catch (error) {
-        res.status(500).json({message: 'Internal server error.'});
+        console.log("error ", error)
+        res.status(500).json({ message: 'Internal server error.' });
     }
 };
+
 const registerUser = async (req, res) => {
     try {
 

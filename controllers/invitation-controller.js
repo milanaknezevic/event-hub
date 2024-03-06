@@ -218,7 +218,12 @@ const getInvitationsByEventId = async (req, res) => {
                 include: [{
                     model: User,
                     as: 'invitedUser',
-                }],
+                },
+                    {
+                        model: Event,
+                        as: 'event',
+                    }
+                ],
             });
             const mappedInvitations = invitations.map(invitation => ({
                 ...invitation.dataValues,
@@ -229,7 +234,7 @@ const getInvitationsByEventId = async (req, res) => {
                 },
             }));
 
-            res.status(200).send(mappedInvitations)
+            res.status(200).send({ invitations: mappedInvitations })
         } else {
             res.status(404).json({success: false, message: 'Event not found.'});
         }
