@@ -2,6 +2,7 @@ const Sequelize = require('sequelize');
 
 const sequelize = require('../util/database')
 const User = require('./user')
+const {USER_STATUS} = require("./enums");
 
 const Event = sequelize.define("Event", {
     id: {
@@ -25,6 +26,11 @@ const Event = sequelize.define("Event", {
     endTime: {
         type: Sequelize.DATE,
         allowNull: false,
+    },
+    status: { //0 nije poceo 1 u toku  2 zavrsen 3 obrisna
+        type: Sequelize.SMALLINT,
+        allowNull: false,
+        default: 0
     },
 }, {
     tableName: 'Event',

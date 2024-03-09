@@ -20,8 +20,8 @@ Comment.belongsTo(Event, {foreignKey: 'event_id', as: 'eventComments', constrain
 User.hasMany(Comment, {as: 'userComments', foreignKey: 'user_id'});
 Comment.belongsTo(User, {foreignKey: 'user_id', as: 'userComments', constraints: true, onDelete: 'CASCADE'});
 
-Event.hasMany(EventImage, {as: 'eventImages', foreignKey: 'event_id'});
-EventImage.belongsTo(Event, {foreignKey: 'event_id', as: 'eventImages', constraints: true, onDelete: 'CASCADE'});
+Event.hasMany(EventImage, {as: 'eventImages', foreignKey: 'event_id',onDelete: 'cascade'});
+EventImage.belongsTo(Event, {foreignKey: 'event_id', as: 'eventImages', constraints: true, onDelete: 'cascade'});
 
 
 

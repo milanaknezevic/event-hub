@@ -14,7 +14,6 @@ const STATUS = {
     IN_PROGRESS: 1,
     CLOSED: 2,
 };
-
 const PRIORITY = {
     LOW: 0,
     MEDIUM: 1,

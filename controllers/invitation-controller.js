@@ -74,7 +74,7 @@ const acceptInvitationGuest = async (req, res) => {
 }
 const acceptInvitationCreator = async (req, res) => {
     try {
-        let {eventId, userId} = req.params
+        let {eventId,userId} = req.params
         let accept = req.query.accept;
         const existingInvitation = await Invitation.findOne({
             where: {
@@ -86,12 +86,12 @@ const acceptInvitationCreator = async (req, res) => {
         });
         if (existingInvitation) {
             switch (accept) {
-                case true:
+                case "true":
                     existingInvitation.statusCreator = true;
                     await existingInvitation.save();
                     res.status(200).json({success: true, message: 'Invitation successfully updated.'})
                     break;
-                case false:
+                case "false":
                     await existingInvitation.destroy();
                     res.status(204).json({success: true, message: 'Invitation successfully declined and deleted.'});
                     break;

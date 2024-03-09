@@ -44,7 +44,7 @@ const User = sequelize.define("User", {
         validate: {
             isIn: {
                 args: [Object.values(USER_ROLES)],
-                msg: 'Invalid user status value',
+                msg: 'Invalid user role value',
             },
         }
     },
@@ -56,7 +56,12 @@ const User = sequelize.define("User", {
     avatar: {
         type: Sequelize.STRING(1024),
         allowNull: true,
-    }
+    },
+    read:{
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+    },
+
 }, {
     tableName: 'User',
 });

@@ -8,7 +8,7 @@ const Location = sequelize.define("Location", {
         allowNull: false,
         primaryKey: true
     },
-    address: {
+    name: {
         type: Sequelize.STRING(255),
         allowNull: false,
     },

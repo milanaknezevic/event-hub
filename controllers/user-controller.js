@@ -51,14 +51,8 @@ const addUser = async (req, res) => {
             role,
             status: USER_STATUS.ACTIVE,
             avatar,
+            read:false
         };
-        if (req.body.avatar) {
-            const {type, data} = req.body.buffer;
-            const bufferData = Buffer.from(data, type);
-            const dir = process.env.AVATAR_DIR;
-            const imagePath = path.join(dir, req.body.avatar);
-            fs.writeFileSync(imagePath, bufferData);
-        }
 
         const newUser = await User.create(userData);
         const mappedUser = {
@@ -72,6 +66,7 @@ const addUser = async (req, res) => {
             mappedUser
         });
     } catch (error) {
+        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -143,7 +138,7 @@ const getUserById = async (req, res) => {
             role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
             status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
         };
-        res.status(200).send(mappedUser)
+        res.status(200).send(user)
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -249,6 +244,7 @@ const updateUser = async (req, res) => {
         });
 
     } catch (error) {
+        console.log("error jeee ", error)
         res.status(500).json({
             success: false,
             message: 'Internal Server Error',
@@ -257,25 +253,28 @@ const updateUser = async (req, res) => {
 };
 
 
-const getAllEventsByCreatorId = async (req, res) => {
-    try {
-        let creatorId = req.params.creatorId;
-        const creator = await User.findByPk(creatorId);
-
-        if (!creator) {
-            return res.status(404).json({error: 'User not found.'});
-        }
-
-        const events = await Event.findAll({
-            where: {creator_id: creatorId},
-        });
-
-
-        return res.status(200).json({success: true, events: events});
-    } catch (error) {
-        res.status(500).json({success: false, message: 'Internal server error.'});
-    }
-};
+// const getAllEventsByCreatorId = async (req, res) => {
+//     try {
+//         let creatorId = req.params.creatorId;
+//         const creator = await User.findByPk(creatorId);
+//
+//         if (!creator) {
+//             return res.status(404).json({error: 'User not found.'});
+//         }
+//
+//         const events = await Event.findAll({
+//             where: {creator_id: creatorId,
+//                 status: {
+//                     [Sequelize.Op.ne]: 3
+//                 }},
+//         });
+//
+//
+//         return res.status(200).json({success: true, events: events});
+//     } catch (error) {
+//         res.status(500).json({success: false, message: 'Internal server error.'});
+//     }
+// };
 const getAllOrganizerEvents = async (req, res) => {
     try {
         let creatorId = req.user.id;
@@ -323,11 +322,17 @@ const getAllOrganizerEvents = async (req, res) => {
         }
 
         events = await Event.findAll({
-            where: additionalFilters,
+            where: {
+                [Sequelize.Op.and]: [
+                    additionalFilters,
+                    { status: { [Sequelize.Op.ne]: 3 } }
+                ]
+            },
             include: [
-                {model: EventImage, as: 'eventImages'},
+                { model: EventImage, as: 'eventImages' },
             ],
         });
+
         const respEvents = events.slice(startIndex, endIndex);
 
         res.status(200).send({ events: respEvents, total: events.length });
@@ -505,8 +510,8 @@ const login = async (req, res) => {
 const getUserRoles = async (req, res) => {
     try {
         const userRolesArray = Object.keys(USER_ROLES)
-            .map(key => ({key: USER_ROLES[key], value: key}))
-            .filter(role => role.key !== 1);
+            .map(key => ({id: USER_ROLES[key], name: key}))
+            .filter(role => role.id !== 1);
         res.json(userRolesArray);
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
@@ -514,7 +519,7 @@ const getUserRoles = async (req, res) => {
 };
 const getUserRolesForAdmin = async (req, res) => {
     try {
-        const userRolesArray = Object.keys(USER_ROLES).map(key => ({key: USER_ROLES[key], value: key}));
+        const userRolesArray = Object.keys(USER_ROLES).map(key => ({id: USER_ROLES[key], name: key}));
         res.json(userRolesArray);
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
@@ -522,16 +527,27 @@ const getUserRolesForAdmin = async (req, res) => {
 };
 const getUserStatus = async (req, res) => {
     try {
-        const userStatusArray = Object.keys(USER_STATUS).map(key => ({key: USER_STATUS[key], value: key}));
+        const userStatusArray = Object.keys(USER_STATUS).map(key => ({id: USER_STATUS[key], name: key}));
         res.json(userStatusArray);
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
 const uploadAvatar = async (req, res) => {
+    // if (req.body.avatar) {
+    //     const {type, data} = req.body.buffer;
+    //     const bufferData = Buffer.from(data, type);
+    //     const dir = process.env.AVATAR_DIR;
+    //     const imagePath = path.join(dir, req.body.avatar);
+    //     fs.writeFileSync(imagePath, bufferData);
+    // }
     try {
-        const imageName = uuidv4() + '_' + req.file.originalname;
-        res.status(200).json({success: true, imageName, buffer: req.file.buffer});
+        const { uid } = req.query;
+        const extension=".png"
+        const dir = process.env.AVATAR_DIR;
+        const imagePath = path.join(dir, uid+extension);
+        fs.writeFileSync(imagePath, req.file.buffer);
+        res.status(200).json({success: true});
     } catch (error) {
 
         res.status(500).json({success: false, message: 'Internal server error.'});
@@ -544,7 +560,7 @@ module.exports = {
     getAllUsers,
     addUser,
     updateAllPropertiesUser,
-    getAllEventsByCreatorId,
+    // getAllEventsByCreatorId,
     getAllOrganizerEvents,
     updateUser,
     getUserById,

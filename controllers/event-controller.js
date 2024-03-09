@@ -159,13 +159,15 @@ const getEventsByEventTypeId = async (req, res) => {
 }
 const deleteEvent = async (req, res) => {
     try {
-        let id = req.params.id
-        await Event.destroy({where: {id: id}})
-        res.status(200).send('Event is deleted!')
+        let id = req.params.id;
+        await Event.update({ status: 3 }, { where: { id: id } });
+        res.status(200).send('Event is deleted!');
     } catch (error) {
-        res.status(500).json({success: false, message: 'Internal server error.'});
+        console.log("error ", error);
+        res.status(500).json({ success: false, message: 'Internal server error.' });
     }
-}
+};
+
 const updateEvent = async (req, res) => {
     const eventId = req.params.id;
     const updatedProperties = req.body;
