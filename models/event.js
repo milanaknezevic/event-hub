@@ -30,7 +30,7 @@ const Event = sequelize.define("Event", {
     status: { //0 nije poceo 1 u toku  2 zavrsen 3 obrisna
         type: Sequelize.SMALLINT,
         allowNull: false,
-        default: 0
+        defaultValue: 0
     },
 }, {
     tableName: 'Event',

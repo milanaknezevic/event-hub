@@ -7,23 +7,34 @@ const User = require('../models/user')
 const Invitation = require('../models/invitation')
 const Sequelize = require('sequelize');
 const {USER_ROLES, USER_STATUS} = require("../models/enums");
+const moment = require('moment');
 const addEvent = async (req, res) => {
     try {
-        const eventData = {
-            name: req.body.name,
-            description: req.body.description,
-            startTime: req.body.startTime,
-            endTime: req.body.endTime,
-            creator_id: req.body.creator_id,
-            eventType_id: req.body.eventType_id,
-            location_id: req.body.location_id
-        };
-        const newEvent = await Event.create(eventData);
+        const eventData = req.body;
+        const startTime = moment(eventData.startTime, 'DD.MM.YYYY. HH:mm').toDate();
+        const endTime = moment(eventData.endTime, 'DD.MM.YYYY. HH:mm').toDate();
+
+        const eventImagesName = eventData.eventImagesName;
+        const {eventImagesName: _, ...rest} = eventData;
+        rest.creator_id = req.user.id;
+        rest.startTime = startTime
+        rest.endTime = endTime
+        console.log("startTime ", startTime)
+        const newEvent = await Event.create({...rest,});
+        const eventImages = eventImagesName.map(async (imageName) => {
+            await EventImage.create({
+                event_id: newEvent.id,
+                image: imageName
+            });
+        });
+
+        await Promise.all(eventImages);
         res.status(201).json({
             message: 'Event added succesfuly',
             eventType: newEvent
         });
     } catch (error) {
+        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -160,11 +171,11 @@ const getEventsByEventTypeId = async (req, res) => {
 const deleteEvent = async (req, res) => {
     try {
         let id = req.params.id;
-        await Event.update({ status: 3 }, { where: { id: id } });
+        await Event.update({status: 3}, {where: {id: id}});
         res.status(200).send('Event is deleted!');
     } catch (error) {
         console.log("error ", error);
-        res.status(500).json({ success: false, message: 'Internal server error.' });
+        res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
 
@@ -271,7 +282,7 @@ const getAllEventsForGuest = async (req, res) => {
                 statusGuest: true,
             },
             include: [{
-                model: Event,as :'event',
+                model: Event, as: 'event',
                 where: additionalFilters,
                 include: [
                     {model: EventImage, as: 'eventImages'},
