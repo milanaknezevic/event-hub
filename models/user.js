@@ -60,6 +60,7 @@ const User = sequelize.define("User", {
     read:{
         type: Sequelize.BOOLEAN,
         allowNull: false,
+        defaultValue: false
     },
 
 }, {

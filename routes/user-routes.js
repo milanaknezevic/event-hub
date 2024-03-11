@@ -21,4 +21,6 @@ router.patch('/:id', verifyUserToken, userController.updateUser)
 router.get('/:id', verifyUserToken, userController.getUserById)
 router.get('/user/logged',verifyUserToken, userController.getLoggedUser)
 
+router.get('/organizer/clients', verifyUserToken, IsOrganizer, userController.getAllClients)//organizer vidi cleints
+
 module.exports = router

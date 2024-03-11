@@ -23,6 +23,7 @@ const Invitation = sequelize.define("Invitation", {
     read:{
         type: Sequelize.BOOLEAN,
         allowNull: false,
+        defaultValue: false
     },
 }, {
     tableName: 'Invitation',

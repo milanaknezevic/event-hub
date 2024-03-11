@@ -13,13 +13,10 @@ const addEvent = async (req, res) => {
         const eventData = req.body;
         const startTime = moment(eventData.startTime, 'DD.MM.YYYY. HH:mm').toDate();
         const endTime = moment(eventData.endTime, 'DD.MM.YYYY. HH:mm').toDate();
-
-        const eventImagesName = eventData.eventImagesName;
-        const {eventImagesName: _, ...rest} = eventData;
+        const {eventImagesName, invitations, ...rest} = eventData;
         rest.creator_id = req.user.id;
         rest.startTime = startTime
         rest.endTime = endTime
-        console.log("startTime ", startTime)
         const newEvent = await Event.create({...rest,});
         const eventImages = eventImagesName.map(async (imageName) => {
             await EventImage.create({
@@ -27,8 +24,29 @@ const addEvent = async (req, res) => {
                 image: imageName
             });
         });
-
         await Promise.all(eventImages);
+        const sentInvitations = invitations.map(async (user) => {
+            const existingInvitation = await Invitation.findOne({
+                where: {
+                    user_id: user.id,
+                    event_id: newEvent.id,
+                },
+            });
+            if (existingInvitation) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Invitation already exists for the specified user and event.'
+                });
+            }
+            const invitationData = {
+                user_id: user.id,
+                event_id: newEvent.id,
+                statusCreator: req.user.role === 0,
+                statusGuest: req.user.role === 2
+            };
+            await Invitation.create(invitationData);
+        });
+        await Promise.all(sentInvitations);
         res.status(201).json({
             message: 'Event added succesfuly',
             eventType: newEvent

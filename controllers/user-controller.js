@@ -70,7 +70,30 @@ const addUser = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+const getAllClients = async (req, res) => {
+    try {
+        let whereClause = {
+            role: {
+                [Sequelize.Op.not]: USER_ROLES.CLIENT
+            }
+        };
+        let users = await User.findAll({
+            attributes: { exclude: ['password'] },
+            where: whereClause,
+            order: [['id', 'DESC']],
+        });
+        const mappedUsers = users.map(user => ({
+            ...user.dataValues,
+            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
+            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
+        }));
 
+        res.status(200).send({ clients: mappedUsers });
+    } catch (error) {
+        console.log("error ", error)
+        res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+};
 
 const getAllUsers = async (req, res) => {
     try {
@@ -441,13 +464,6 @@ const registerUser = async (req, res) => {
             status: USER_STATUS.REQUESTED,
             avatar,
         };
-        if (req.body.avatar) {
-            const {type, data} = req.body.buffer;
-            const bufferData = Buffer.from(data, type);
-            const dir = process.env.AVATAR_DIR;
-            const imagePath = path.join(dir, req.body.avatar);
-            fs.writeFileSync(imagePath, bufferData);
-        }
 
         const newUser = await User.create(userData);
         const mappedUser = {
@@ -461,7 +477,7 @@ const registerUser = async (req, res) => {
             mappedUser
         });
     } catch (error) {
-
+        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -570,5 +586,5 @@ module.exports = {
     getUserRolesForAdmin,
     getLoggedUser,
     getUserStatus,
-    deleteUser
+    deleteUser,getAllClients
 };
