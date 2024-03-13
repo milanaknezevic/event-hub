@@ -81,6 +81,8 @@ const getEventById = async (req, res) => {
             ],
             attributes: {exclude: ['location_id', 'eventType_id']},
         });
+        event.dataValues.startTime = moment(event.dataValues.startTime).format('DD.MM.YYYY. HH:mm');
+        event.dataValues.endTime = moment(event.dataValues.endTime).format('DD.MM.YYYY. HH:mm');
         res.status(200).send(event);
     } catch (error) {
 
