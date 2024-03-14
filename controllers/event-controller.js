@@ -8,6 +8,7 @@ const Invitation = require('../models/invitation')
 const Sequelize = require('sequelize');
 const {USER_ROLES, USER_STATUS} = require("../models/enums");
 const moment = require('moment');
+const fs = require("fs");
 const addEvent = async (req, res) => {
     try {
         const eventData = req.body;
@@ -200,21 +201,47 @@ const deleteEvent = async (req, res) => {
 };
 
 const updateEvent = async (req, res) => {
-    const eventId = req.params.id;
-    const updatedProperties = req.body;
     try {
+        const eventId = req.params.id;
+        const eventData = req.body;
+        const startTime = moment(eventData.startTime, 'DD.MM.YYYY. HH:mm').toDate();
+        const endTime = moment(eventData.endTime, 'DD.MM.YYYY. HH:mm').toDate();
+        const {addedImages, removedImages, ...rest} = eventData;
+        rest.startTime = startTime
+        rest.endTime = endTime
         const existingEvent = await Event.findByPk(eventId);
 
         if (!existingEvent) {
             return res.status(404).json({success: false, message: 'Event not found.'});
         }
-        await existingEvent.update(updatedProperties);
+        await existingEvent.update(rest);
+
+        await deleteImages(removedImages)
+
+        const eventImages = addedImages.map(async (imageName) => {
+            await EventImage.create({
+                event_id: eventId,
+                image: imageName
+            });
+        });
+        await Promise.all(eventImages);
+
 
         res.status(200).json({success: true, message: 'Event properties updated successfully.', user: existingEvent});
     } catch (error) {
+        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+const deleteImages = async (images) => {
+    const dir = process.env.EVENT_IMG_DIR;
+    for (const image of images) {
+        await EventImage.destroy({where: {image: image.uid}});
+        const imagePath = dir + image.uid + '.png';
+        fs.unlinkSync(imagePath);
+    }
+}
+
 const filterEvents = async (req, res) => {
     try {
         const {name, startDate, endDate} = req.query;

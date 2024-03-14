@@ -74,7 +74,7 @@ const acceptInvitationGuest = async (req, res) => {
 }
 const acceptInvitationCreator = async (req, res) => {
     try {
-        let {eventId,userId} = req.params
+        let {eventId, userId} = req.params
         let accept = req.query.accept;
         const existingInvitation = await Invitation.findOne({
             where: {
@@ -204,6 +204,48 @@ const getAllUnacceptedInvitationsForClient = async (req, res) => {
 
 }
 
+
+const getAllUnacceptedInvitations = async (req, res) => {
+    try {
+        const {eventId} = req.params;
+        const invitations = await Invitation.findAll({
+            where: {
+                statusCreator: true,
+                statusGuest: false,
+                event_id: eventId
+            },
+            include: [{
+                model: User,
+                as: 'invitedUser',
+            }],
+            attributes: {exclude: ['event_id']},
+        });
+        //ako ej true to su pozivnice koje je organizer vec psolao i moze da ih ukloni
+        const users = invitations.map(value => ({
+            ...value.dataValues.invitedUser.dataValues,
+            invitationStatus: true
+        }));
+        const allInivitations = await Invitation.findAll({where: {event_id: eventId}});
+        const invitedUserIds = allInivitations.map(invitation => invitation.user_id);
+        const allUsers = await User.findAll({
+            where: {
+                id: {
+                    [Sequelize.Op.notIn]: invitedUserIds
+                }
+            }
+        });
+//ako je false nije nikad ni slao pozivnicu, pa je moze psolati
+        const allUsersWithStatus = allUsers.map(user => ({
+            ...user.dataValues,
+            invitationStatus: false
+        }));
+        const allUsersCombined = [...users, ...allUsersWithStatus];
+        res.status(200).send({clients: allUsersCombined});
+    } catch (error) {
+        console.log("error neki ludilo ", error)
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+}
 const getInvitationsByEventId = async (req, res) => {
     try {
         let eventId = req.params.eventId
@@ -234,7 +276,7 @@ const getInvitationsByEventId = async (req, res) => {
                 },
             }));
 
-            res.status(200).send({ invitations: mappedInvitations })
+            res.status(200).send({invitations: mappedInvitations})
         } else {
             res.status(404).json({success: false, message: 'Event not found.'});
         }
@@ -250,5 +292,6 @@ module.exports = {
     acceptInvitationCreator,
     getInvitationById,
     getAllInvitation,
-    getInvitationsByEventId
+    getInvitationsByEventId,
+    getAllUnacceptedInvitations
 }

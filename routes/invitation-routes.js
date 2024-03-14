@@ -14,6 +14,9 @@ router.get('/unaccepeted',verifyUserToken,IsOrganizer, invitationController.getA
 router.get('/',verifyUserToken,IsClient, invitationController.getAllUnacceptedInvitationsForClient)
 
 
+router.get('/organizer/active/:eventId',verifyUserToken,IsOrganizer, invitationController.getAllUnacceptedInvitations)
+
+
 //nepotrebna ruta
 router.get('/', invitationController.getAllInvitation)
 
