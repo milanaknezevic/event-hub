@@ -78,6 +78,14 @@ const getEventById = async (req, res) => {
                 }
                 , {
                     model: EventType,
+                },
+                {
+                    model: User,
+                    as: 'attendingUsers',
+                    through: {
+                        model: Invitation,
+                        as: 'invitations'
+                    }
                 }
             ],
             attributes: {exclude: ['location_id', 'eventType_id']},
@@ -86,7 +94,7 @@ const getEventById = async (req, res) => {
         event.dataValues.endTime = moment(event.dataValues.endTime).format('DD.MM.YYYY. HH:mm');
         res.status(200).send(event);
     } catch (error) {
-
+        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -206,7 +214,7 @@ const updateEvent = async (req, res) => {
         const eventData = req.body;
         const startTime = moment(eventData.startTime, 'DD.MM.YYYY. HH:mm').toDate();
         const endTime = moment(eventData.endTime, 'DD.MM.YYYY. HH:mm').toDate();
-        const {addedImages, removedImages, ...rest} = eventData;
+        const {addedImages, removedImages, addedInvitations, removedInvitations, ...rest} = eventData;
         rest.startTime = startTime
         rest.endTime = endTime
         const existingEvent = await Event.findByPk(eventId);
@@ -217,6 +225,8 @@ const updateEvent = async (req, res) => {
         await existingEvent.update(rest);
 
         await deleteImages(removedImages)
+        await deleteInvitations(removedInvitations, eventId)
+
 
         const eventImages = addedImages.map(async (imageName) => {
             await EventImage.create({
@@ -225,6 +235,17 @@ const updateEvent = async (req, res) => {
             });
         });
         await Promise.all(eventImages);
+
+        const eventInvitations = addedInvitations.map(async (invitation) => {
+            await Invitation.create({
+                user_id: invitation.id,
+                event_id: eventId,
+                statusCreator: true,
+                statusGuest: false
+
+            });
+        });
+        await Promise.all(eventInvitations);
 
 
         res.status(200).json({success: true, message: 'Event properties updated successfully.', user: existingEvent});
@@ -239,6 +260,16 @@ const deleteImages = async (images) => {
         await EventImage.destroy({where: {image: image.uid}});
         const imagePath = dir + image.uid + '.png';
         fs.unlinkSync(imagePath);
+    }
+}
+
+const deleteInvitations = async (invitations, eventId) => {
+    for (const invitation of invitations) {
+        await Invitation.destroy({
+                where:
+                    {user_id: invitation.id, event_id: eventId}
+            }
+        );
     }
 }
 
