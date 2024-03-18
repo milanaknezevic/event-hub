@@ -2,7 +2,7 @@ const invitationController = require('../controllers/invitation-controller')
 const {verifyUserToken, IsClient, IsOrganizer, IsOrganizerOrClient} = require("../middleware/auth");
 const router = require('express').Router()
 
-router.post('/:eventId', verifyUserToken, IsOrganizerOrClient, invitationController.createInvitation) //pozivam korisnika a i korisnik se prijavljuje
+router.post('/:eventId/:userId', verifyUserToken, IsOrganizerOrClient, invitationController.createInvitation) //pozivam korisnika a i korisnik se prijavljuje
 router.get('/event/:eventId', verifyUserToken, IsOrganizer, invitationController.getInvitationsByEventId)//prikazuje yahtjeve ya prisustvo
 router.put('/guest/:eventId',verifyUserToken,IsClient, invitationController.acceptInvitationGuest)//korisnik moze prihvatiti i odbiti pozivnicu
 

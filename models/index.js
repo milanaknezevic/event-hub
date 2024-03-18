@@ -36,11 +36,11 @@ Ticket.belongsTo(User, { foreignKey: 'support_id', as: 'assignedToTicket', const
 
 
 User.belongsToMany(Event, {through: 'Invitation', foreignKey: 'user_id', as: 'invitedEvents'});
+User.hasMany(Invitation, { foreignKey: 'user_id', as: 'invitations' });
 Event.belongsToMany(User, {through: 'Invitation', foreignKey: 'event_id', as: 'attendingUsers'});
-
+Event.hasMany(Invitation, { foreignKey: 'event_id', as: 'invitations' });
 Invitation.belongsTo(User, {foreignKey: 'user_id',as: 'invitedUser', constraints: true, onDelete: 'CASCADE'});
 Invitation.belongsTo(Event, {foreignKey: 'event_id',as: 'event', constraints: true, onDelete: 'CASCADE'});
-
 
 
 module.exports = {

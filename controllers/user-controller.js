@@ -569,8 +569,42 @@ const uploadAvatar = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+const notInvitedUsers = async (req, res) => {
+    try {
+        const eventId=req.params.id
+
+        const invitations = await Invitation.findAll({
+            where: { event_id: eventId }
+        });
+
+        const invitedUserIds = invitations.map(invitation => invitation.user_id);
+
+        const users = await User.findAll({
+            where: {
+                id: { [Sequelize.Op.notIn]: invitedUserIds },
+                role: USER_ROLES.CLIENT
+            }
+        });
+
+
+        const mappedUsers = users.map(user => ({
+            ...user.dataValues,
+            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
+            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
+        }));
+
+        res.status(200).send({ users: mappedUsers });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
 
 module.exports = {
+    notInvitedUsers,
     uploadAvatar,
     registerUser,
     getAllUsers,

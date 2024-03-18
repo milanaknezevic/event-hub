@@ -23,4 +23,6 @@ router.get('/user/logged',verifyUserToken, userController.getLoggedUser)
 
 router.get('/organizer/clients', verifyUserToken, IsOrganizer, userController.getAllClients)//organizer vidi clients
 
+router.get('/organizer/not_invited/:id',verifyUserToken, IsOrganizer, userController.notInvitedUsers)
+
 module.exports = router
