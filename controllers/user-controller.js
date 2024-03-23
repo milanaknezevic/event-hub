@@ -10,6 +10,7 @@ const EventImage = require("../models/eventImage");
 const fs = require('fs');
 const path = require('path');
 const {v4: uuidv4} = require('uuid');
+const Comment = require("../models/comment");
 
 
 const addUser = async (req, res) => {
@@ -51,7 +52,7 @@ const addUser = async (req, res) => {
             role,
             status: USER_STATUS.ACTIVE,
             avatar,
-            read:false
+            read: false
         };
 
         const newUser = await User.create(userData);
@@ -78,7 +79,7 @@ const getAllClients = async (req, res) => {
             }
         };
         let users = await User.findAll({
-            attributes: { exclude: ['password'] },
+            attributes: {exclude: ['password']},
             where: whereClause,
             order: [['id', 'DESC']],
         });
@@ -88,16 +89,16 @@ const getAllClients = async (req, res) => {
             status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
         }));
 
-        res.status(200).send({ clients: mappedUsers });
+        res.status(200).send({clients: mappedUsers});
     } catch (error) {
         console.log("error ", error)
-        res.status(500).json({ success: false, message: 'Internal server error.' });
+        res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
 
 const getAllUsers = async (req, res) => {
     try {
-        const { page = 1, size = 10, search } = req.query;
+        const {page = 1, size = 10, search} = req.query;
         const startIndex = (page - 1) * size;
         const endIndex = page * size;
 
@@ -111,16 +112,16 @@ const getAllUsers = async (req, res) => {
             whereClause = {
                 ...whereClause,
                 [Sequelize.Op.or]: [
-                    { username: { [Sequelize.Op.iLike]: `%${search}%` } },
-                    { email: { [Sequelize.Op.iLike]: `%${search}%` } },
-                    { name: { [Sequelize.Op.iLike]: `%${search}%` } },
-                    { lastname: { [Sequelize.Op.iLike]: `%${search}%` } },
+                    {username: {[Sequelize.Op.iLike]: `%${search}%`}},
+                    {email: {[Sequelize.Op.iLike]: `%${search}%`}},
+                    {name: {[Sequelize.Op.iLike]: `%${search}%`}},
+                    {lastname: {[Sequelize.Op.iLike]: `%${search}%`}},
                 ]
             };
         }
 
         let users = await User.findAll({
-            attributes: { exclude: ['password'] },
+            attributes: {exclude: ['password']},
             where: whereClause,
             order: [['id', 'DESC']],
         });
@@ -132,9 +133,9 @@ const getAllUsers = async (req, res) => {
             status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
         }));
 
-        res.status(200).send({ users: mappedUsers, total: users.length });
+        res.status(200).send({users: mappedUsers, total: users.length});
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Internal server error.' });
+        res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
 
@@ -196,7 +197,6 @@ const deleteUser = async (req, res) => {
 const updateUser = async (req, res) => {
     const userId = req.params.id;
     const updatedProperties = req.body;
-
 
     try {
         const existingUser = await User.findByPk(userId);
@@ -276,6 +276,94 @@ const updateUser = async (req, res) => {
 };
 
 
+const updateMyProfile = async (req, res) => {
+
+    let updatedProperties = req.body;
+
+    try {
+        const existingUser = await User.findByPk(req.user.id);
+
+
+        if (!existingUser) {
+            return res.status(404).json({success: false, message: 'User not found.'});
+        }
+        if (existingUser.id !== req.user.id) {
+            return res.status(403).json({success: false, message: 'Forbidden.'});
+        }
+
+        const verifyEmail = await User.findOne({
+            where: {
+                email: updatedProperties.email,
+                id: {
+                    [Sequelize.Op.not]: updatedProperties.id
+                }
+            }
+        });
+        const verifyUsername = await User.findOne({
+            where: {
+                username: updatedProperties.username,
+                id: {
+                    [Sequelize.Op.not]: updatedProperties.id
+                }
+            }
+        });
+
+        if (verifyEmail) {
+            res.status(400).json({
+                errors: [
+                    {
+                        field: 'email',
+                        message: 'Email already exists',
+                    },
+                ],
+            });
+            return;
+        } else if (verifyUsername) {
+            res.status(400).json({
+                errors: [
+                    {
+                        field: 'username',
+                        message: 'Username already exists',
+                    },
+                ],
+            });
+            return;
+        }
+        if ('id' in updatedProperties) {
+            delete updatedProperties.id;
+        }
+
+        delete updatedProperties.role
+        delete updatedProperties.status
+
+        await User.update(updatedProperties, {
+            where: {id: existingUser.id}
+        });
+
+        const updatedUser = await User.findByPk(existingUser.id);
+
+        const mappedUser = {
+            ...updatedUser.dataValues,
+            role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === updatedUser.dataValues.role),
+            status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === updatedUser.dataValues.status),
+        };
+        delete mappedUser.password;
+
+        res.status(200).json({
+            success: true,
+            message: 'User updated successfully',
+            user: mappedUser,
+        });
+
+    } catch (error) {
+        console.log("error jeee ", error)
+        res.status(500).json({
+            success: false,
+            message: 'Internal Server Error',
+        });
+    }
+};
+
 // const getAllEventsByCreatorId = async (req, res) => {
 //     try {
 //         let creatorId = req.params.creatorId;
@@ -311,16 +399,16 @@ const getAllOrganizerEvents = async (req, res) => {
         let dateFilter = {};
 
         switch (statusOption) {
-            case 0:
+            case 0: //zavrseni
                 dateFilter = {endTime: {[Sequelize.Op.lt]: new Date()}};
                 break;
-            case 1:
+            case 1: //u toku
                 dateFilter = {
                     startTime: {[Sequelize.Op.lte]: new Date()},
                     endTime: {[Sequelize.Op.gt]: new Date()}
                 };
                 break;
-            case 2:
+            case 2: //upcoming
                 dateFilter = {startTime: {[Sequelize.Op.gt]: new Date()}};
                 break;
             default:
@@ -332,11 +420,11 @@ const getAllOrganizerEvents = async (req, res) => {
             ...dateFilter,
         };
 
-        if (locationId !=="") {
+        if (locationId !== "") {
             additionalFilters.location_id = parseInt(locationId);
         }
 
-        if (eventTypeId !=="")  {
+        if (eventTypeId !== "") {
             additionalFilters.eventType_id = parseInt(eventTypeId);
         }
 
@@ -348,17 +436,17 @@ const getAllOrganizerEvents = async (req, res) => {
             where: {
                 [Sequelize.Op.and]: [
                     additionalFilters,
-                    { status: { [Sequelize.Op.ne]: 3 } }
+                    {status: {[Sequelize.Op.ne]: 3}}
                 ]
             },
             include: [
-                { model: EventImage, as: 'eventImages' },
+                {model: EventImage, as: 'eventImages'},
             ],
         });
 
         const respEvents = events.slice(startIndex, endIndex);
 
-        res.status(200).send({ events: respEvents, total: events.length });
+        res.status(200).send({events: respEvents, total: events.length});
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -367,6 +455,9 @@ const getAllEventGuests = async (req, res) => {
     try {
         let eventId = req.params.eventId;
         let statusOption = req.query.status;
+        const {page = 1, size = 10} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex = page * size;
         let invitations;
         switch (statusOption) {
             case "true":
@@ -376,7 +467,7 @@ const getAllEventGuests = async (req, res) => {
                         statusCreator: true,
                         statusGuest: true,
                     },
-                    include: [{ model: User, as: 'invitedUser' }]
+                    include: [{model: User, as: 'invitedUser'}]
                 });
                 break;
             case "false":
@@ -398,7 +489,7 @@ const getAllEventGuests = async (req, res) => {
                 });
                 break;
             default:
-                return res.status(400).json({ error: 'Invalid status option.' });
+                return res.status(400).json({error: 'Invalid status option.'});
         }
         // const users = invitations.map(invitation => invitation.invitedUser); // Update mapping with the alias
         //
@@ -407,7 +498,10 @@ const getAllEventGuests = async (req, res) => {
         //     role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
         //     status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
         // }));
-        const mappedInvitations = invitations.map(invitation => ({
+
+        const respInvitations = invitations.slice(startIndex, endIndex);
+
+        const mappedInvitations = respInvitations.map(invitation => ({
             ...invitation.dataValues,
             invitedUser: {
                 ...invitation.invitedUser.dataValues,
@@ -416,10 +510,10 @@ const getAllEventGuests = async (req, res) => {
             },
         }));
 
-        return res.status(200).json({ invitations: mappedInvitations });
+        return res.status(200).json({invitations: mappedInvitations, total: invitations.length});
     } catch (error) {
         console.log("error ", error)
-        res.status(500).json({ message: 'Internal server error.' });
+        res.status(500).json({message: 'Internal server error.'});
     }
 };
 
@@ -550,18 +644,11 @@ const getUserStatus = async (req, res) => {
     }
 };
 const uploadAvatar = async (req, res) => {
-    // if (req.body.avatar) {
-    //     const {type, data} = req.body.buffer;
-    //     const bufferData = Buffer.from(data, type);
-    //     const dir = process.env.AVATAR_DIR;
-    //     const imagePath = path.join(dir, req.body.avatar);
-    //     fs.writeFileSync(imagePath, bufferData);
-    // }
     try {
-        const { uid } = req.query;
-        const extension=".png"
+        const {uid} = req.query;
+        const extension = ".png"
         const dir = process.env.AVATAR_DIR;
-        const imagePath = path.join(dir, uid+extension);
+        const imagePath = path.join(dir, uid + extension);
         fs.writeFileSync(imagePath, req.file.buffer);
         res.status(200).json({success: true});
     } catch (error) {
@@ -571,39 +658,81 @@ const uploadAvatar = async (req, res) => {
 };
 const notInvitedUsers = async (req, res) => {
     try {
-        const eventId=req.params.id
+        const eventId = req.params.id
+        const {page = 1, size = 10} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex = page * size;
 
         const invitations = await Invitation.findAll({
-            where: { event_id: eventId }
+            where: {event_id: eventId}
         });
 
         const invitedUserIds = invitations.map(invitation => invitation.user_id);
 
         const users = await User.findAll({
             where: {
-                id: { [Sequelize.Op.notIn]: invitedUserIds },
+                id: {[Sequelize.Op.notIn]: invitedUserIds},
                 role: USER_ROLES.CLIENT
             }
         });
+        const respUsers = users.slice(startIndex, endIndex);
 
 
-        const mappedUsers = users.map(user => ({
+        const mappedUsers = respUsers.map(user => ({
             ...user.dataValues,
             role: Object.keys(USER_ROLES).find(key => USER_ROLES[key] === user.dataValues.role),
             status: Object.keys(USER_STATUS).find(key => USER_STATUS[key] === user.dataValues.status),
         }));
 
-        res.status(200).send({ users: mappedUsers });
+        res.status(200).send({users: mappedUsers, total: users.length});
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({message: 'Server error'});
     }
 };
 
+const changePassword = async (req, res) => {
+    try {
+        const id = req.user.id;
+        const {old_password, new_password, confirm_password} = req.body
+        const existingUser = await User.findByPk(id);
+        if (!existingUser) {
+            return res.status(404).json({success: false, message: 'User not found.'});
+        }
+        if (existingUser.id !== id) {
+            return res.status(403).json({success: false, message: 'Forbidden.'});
+        }
 
+        let isPasswordValid = await bcrypt.compare(old_password, existingUser.password)
+        if (!isPasswordValid) {
+            return res.status(403).json({
+                errors: [
+                    {
+                        field: 'old_password',
+                        message: 'Wrong old password',
+                    },
+                ],
+            });
+
+        }
+        const hash = await bcrypt.hash(confirm_password, 10);
+        const updatedProperties={
+            password:hash
+        }
+        await User.update(updatedProperties, {
+            where: {id: id}
+        });
+        res.status(200).json({success: true});
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({message: 'Server error'});
+    }
+};
 
 module.exports = {
+    changePassword,
     notInvitedUsers,
     uploadAvatar,
     registerUser,
@@ -617,8 +746,9 @@ module.exports = {
     getAllEventGuests,
     login,
     getUserRoles,
+    updateMyProfile,
     getUserRolesForAdmin,
     getLoggedUser,
     getUserStatus,
-    deleteUser,getAllClients
+    deleteUser, getAllClients
 };

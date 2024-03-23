@@ -1,9 +1,10 @@
 const userController = require('../controllers/user-controller')
-const {verifyUserToken, IsSupport, IsOrganizer,} = require("../middleware/auth");
+const {verifyUserToken, IsSupport, IsOrganizer, IsOrganizerOrClient,} = require("../middleware/auth");
 const router = require('express').Router()
 const validation = require('../middleware/validationMiddleware')
 const userSchema = require('../validation/userValidation')
 const multer = require('multer');
+const ticketController = require("../controllers/ticket-controller");
 const upload = multer();
 
 router.post('/', validation(userSchema.registrationSchema), userController.registerUser);
@@ -17,12 +18,17 @@ router.get('/adminRoles',verifyUserToken,IsSupport, userController.getUserRolesF
 router.get('/userStatus',verifyUserToken,IsSupport, userController.getUserStatus)
 router.get('/guests/:eventId', verifyUserToken, IsOrganizer, userController.getAllEventGuests);//api/users/guests/6?status=false
 router.get('/organizer_events', verifyUserToken, IsOrganizer, userController.getAllOrganizerEvents)//api/users/2/events?status=1
-router.patch('/:id', verifyUserToken, userController.updateUser)
+router.patch('/:id',validation(userSchema.editUserSchema), verifyUserToken,IsSupport, userController.updateUser)
+router.patch('/update/profile', validation(userSchema.updateUserSchema), verifyUserToken,IsOrganizerOrClient, userController.updateMyProfile)
 router.get('/:id', verifyUserToken, userController.getUserById)
 router.get('/user/logged',verifyUserToken, userController.getLoggedUser)
 
 router.get('/organizer/clients', verifyUserToken, IsOrganizer, userController.getAllClients)//organizer vidi clients
 
 router.get('/organizer/not_invited/:id',verifyUserToken, IsOrganizer, userController.notInvitedUsers)
+
+
+router.put('/change_password',validation(userSchema.changePasswordSchema), verifyUserToken, userController.changePassword)
+
 
 module.exports = router

@@ -70,7 +70,7 @@ const getEventById = async (req, res) => {
                     include: [{
                         model: User,
                         as: 'userComments',
-                        attributes: ['name', 'username', 'lastname']
+                        // attributes: ['name', 'username', 'lastname']
                     }]
                 },
                 {

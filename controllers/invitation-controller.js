@@ -249,6 +249,9 @@ const getAllUnacceptedInvitations = async (req, res) => {
 const getInvitationsByEventId = async (req, res) => {
     try {
         let eventId = req.params.eventId
+        const {page = 1, size = 10} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex = page * size;
         let event = await Event.findOne({where: {id: eventId}})
         if (event) {
             let invitations = await Invitation.findAll({
@@ -267,7 +270,10 @@ const getInvitationsByEventId = async (req, res) => {
                     }
                 ],
             });
-            const mappedInvitations = invitations.map(invitation => ({
+
+            const respInvitations = invitations.slice(startIndex, endIndex);
+
+            const mappedInvitations = respInvitations.map(invitation => ({
                 ...invitation.dataValues,
                 invitedUser: {
                     ...invitation.invitedUser.dataValues,
@@ -276,15 +282,28 @@ const getInvitationsByEventId = async (req, res) => {
                 },
             }));
 
-            res.status(200).send({invitations: mappedInvitations})
+            res.status(200).send({invitations: mappedInvitations,total: invitations.length})
         } else {
-            res.status(404).json({success: false, message: 'Event not found.'});
+            res.status(404).json({success: false, message: 'Invitation not found.'});
         }
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
+
+const organizerUnsendInvitation = async (req, res) => {
+    try {
+        let eventId = req.params.eventId;
+        let userId = req.params.userId;
+        await Invitation.destroy({where: {event_id: eventId, user_id: userId}});
+        res.status(200).send('Invitation is deleted!');
+    } catch (error) {
+        console.log("error ", error);
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
 module.exports = {
+    organizerUnsendInvitation,
     createInvitation,
     getAllUnacceptedInvitationsForOrganizer,
     getAllUnacceptedInvitationsForClient,

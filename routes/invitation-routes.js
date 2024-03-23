@@ -1,5 +1,6 @@
 const invitationController = require('../controllers/invitation-controller')
 const {verifyUserToken, IsClient, IsOrganizer, IsOrganizerOrClient} = require("../middleware/auth");
+const eventController = require("../controllers/event-controller");
 const router = require('express').Router()
 
 router.post('/:eventId/:userId', verifyUserToken, IsOrganizerOrClient, invitationController.createInvitation) //pozivam korisnika a i korisnik se prijavljuje
@@ -12,6 +13,8 @@ router.get('/:userId/:eventId',verifyUserToken,IsOrganizerOrClient, invitationCo
 //organizator treba da vidi sve pozive koje je primio za neki dogadjaj, klijent treba da vidi sve pozivnice koje je primio i poslao.
 router.get('/unaccepeted',verifyUserToken,IsOrganizer, invitationController.getAllUnacceptedInvitationsForOrganizer)
 router.get('/',verifyUserToken,IsClient, invitationController.getAllUnacceptedInvitationsForClient)
+router.delete('/:eventId/:userId', verifyUserToken, IsOrganizer, invitationController.organizerUnsendInvitation)
+
 
 
 router.get('/organizer/active/:eventId',verifyUserToken,IsOrganizer, invitationController.getAllUnacceptedInvitations)
