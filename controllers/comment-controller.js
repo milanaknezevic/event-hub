@@ -7,10 +7,9 @@ const addComment = async (req, res) => {
         const commentData = {
             question: req.body.question,
             answer: null,
-            mark: req.body.mark ? req.body.mark : null,
-            creationDate: req.body.creationDate,
+            creationDate: new Date(),
             event_id: req.body.event_id,
-            user_id: req.body.user_id,
+            user_id: req.user.id,
         };
 
         const newComment = await Comment.create(commentData);

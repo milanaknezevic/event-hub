@@ -34,6 +34,7 @@ const createInvitation = async (req, res) => {
             invitation: newInvitation
         });
     } catch (error) {
+        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }

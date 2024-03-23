@@ -98,25 +98,31 @@ const getEventById = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
-
+function getStatusPozivnice(eventId, userId,invitations) {
+    return !!invitations.find(invitation => invitation.event_id === eventId && invitation.user_id === userId);
+}
 const getAllEvents = async (req, res) => {
     try {
-        const {page = 1, size = 10, name, locationId, eventTypeId, status} = req.query;
+        const {page = 1, size = 10, search, locationId, eventTypeId, status} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex = page * size;
+
         let statusOption = parseInt(status, 10);
+
         let events;
         let dateFilter = {};
 
         switch (statusOption) {
-            case 0:
+            case 0: //zavrseni
                 dateFilter = {endTime: {[Sequelize.Op.lt]: new Date()}};
                 break;
-            case 1:
+            case 1: //u toku
                 dateFilter = {
                     startTime: {[Sequelize.Op.lte]: new Date()},
                     endTime: {[Sequelize.Op.gt]: new Date()}
                 };
                 break;
-            case 2:
+            case 2: //upcoming
                 dateFilter = {startTime: {[Sequelize.Op.gt]: new Date()}};
                 break;
             default:
@@ -126,30 +132,51 @@ const getAllEvents = async (req, res) => {
             ...dateFilter,
         };
 
-        if (locationId) {
-            additionalFilters.location_id = locationId;
+        if (locationId !== "") {
+            additionalFilters.location_id = parseInt(locationId);
         }
 
-        if (eventTypeId) {
-            additionalFilters.event_type_id = eventTypeId;
+        if (eventTypeId !== "") {
+            additionalFilters.eventType_id = parseInt(eventTypeId);
         }
 
-        if (name) {
-            additionalFilters.name = {[Sequelize.Op.iLike]: `%${name}%`};
+        if (search) {
+            additionalFilters.name = {[Sequelize.Op.iLike]: `%${search}%`};
         }
+
         events = await Event.findAll({
-            where: additionalFilters,
+            where: {
+                [Sequelize.Op.and]: [
+                    additionalFilters,
+                    {status: {[Sequelize.Op.ne]: 3}}
+                ]
+            },
             include: [
                 {model: EventImage, as: 'eventImages'},
+                {model: Invitation ,as:'invitations'}
             ],
-            limit: size,
-            offset: (page - 1) * size,
+
         });
-        res.status(200).send({events});
+
+
+
+        const eventsWithStatus = events.map(event => {
+            const plainEvent = event.get({ plain: true });
+            const invitationStatus = getStatusPozivnice(plainEvent.id, req.user.id, plainEvent.invitations);
+            return { ...plainEvent, invitationStatus };
+        });
+
+
+        const respEvents = eventsWithStatus.slice(startIndex, endIndex);
+
+        res.status(200).send({events: respEvents, total: events.length});
+
     } catch (error) {
+        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+
 const getEventsByLocationId = async (req, res) => {
     try {
         const page = req.query.page || 1;

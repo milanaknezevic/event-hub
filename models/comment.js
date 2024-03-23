@@ -16,10 +16,6 @@ const Comment = sequelize.define("Comment", {
         type: Sequelize.STRING(255),
         allowNull: true,
     },
-    mark: {
-        type: Sequelize.SMALLINT,
-        allowNull: true,
-    },
     creationDate: {
         type: Sequelize.DATE,
         allowNull: false,

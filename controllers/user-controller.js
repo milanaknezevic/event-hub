@@ -447,6 +447,7 @@ const getAllOrganizerEvents = async (req, res) => {
         const respEvents = events.slice(startIndex, endIndex);
 
         res.status(200).send({events: respEvents, total: events.length});
+
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
