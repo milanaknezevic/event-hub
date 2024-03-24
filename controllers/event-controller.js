@@ -98,9 +98,11 @@ const getEventById = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
-function getStatusPozivnice(eventId, userId,invitations) {
+
+function getStatusPozivnice(eventId, userId, invitations) {
     return !!invitations.find(invitation => invitation.event_id === eventId && invitation.user_id === userId);
 }
+
 const getAllEvents = async (req, res) => {
     try {
         const {page = 1, size = 10, search, locationId, eventTypeId, status} = req.query;
@@ -153,17 +155,16 @@ const getAllEvents = async (req, res) => {
             },
             include: [
                 {model: EventImage, as: 'eventImages'},
-                {model: Invitation ,as:'invitations'}
+                {model: Invitation, as: 'invitations'}
             ],
 
         });
 
 
-
         const eventsWithStatus = events.map(event => {
-            const plainEvent = event.get({ plain: true });
+            const plainEvent = event.get({plain: true});
             const invitationStatus = getStatusPozivnice(plainEvent.id, req.user.id, plainEvent.invitations);
-            return { ...plainEvent, invitationStatus };
+            return {...plainEvent, invitationStatus};
         });
 
 
@@ -343,23 +344,27 @@ const filterEvents = async (req, res) => {
 const getAllEventsForGuest = async (req, res) => {
 
     try {
-        let guestId = req.params.guestId;
-        const {page = 1, size = 10, name, locationId, eventTypeId, status} = req.query;
+        let guestId = req.user.id;
+        const {page = 1, size = 10, search, locationId, eventTypeId, status} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex = page * size;
+
         let statusOption = parseInt(status, 10);
 
         let events;
         let dateFilter = {};
+
         switch (statusOption) {
-            case 0:
+            case 0: //zavrseni
                 dateFilter = {endTime: {[Sequelize.Op.lt]: new Date()}};
                 break;
-            case 1:
+            case 1: //u toku
                 dateFilter = {
                     startTime: {[Sequelize.Op.lte]: new Date()},
                     endTime: {[Sequelize.Op.gt]: new Date()}
                 };
                 break;
-            case 2:
+            case 2: //upcoming
                 dateFilter = {startTime: {[Sequelize.Op.gt]: new Date()}};
                 break;
             default:
@@ -369,21 +374,20 @@ const getAllEventsForGuest = async (req, res) => {
             ...dateFilter,
         };
 
-        if (locationId) {
-            additionalFilters.location_id = locationId;
+        if (locationId !== "") {
+            additionalFilters.location_id = parseInt(locationId);
         }
 
-        if (eventTypeId) {
-            additionalFilters.event_type_id = eventTypeId;
+        if (eventTypeId !== "") {
+            additionalFilters.eventType_id = parseInt(eventTypeId);
         }
 
-        if (name) {
-            additionalFilters.name = {[Sequelize.Op.iLike]: `%${name}%`};
+        if (search) {
+            additionalFilters.name = {[Sequelize.Op.iLike]: `%${search}%`};
         }
         const invitations = await Invitation.findAll({
             where: {
                 user_id: guestId,
-                statusCreator: true,
                 statusGuest: true,
             },
             include: [{
@@ -393,11 +397,10 @@ const getAllEventsForGuest = async (req, res) => {
                     {model: EventImage, as: 'eventImages'},
                 ]
             }],
-            limit: size,
-            offset: (page - 1) * size,
         });
         events = invitations.map(invitation => invitation.event);
-        return res.status(200).json({events});
+        const respEvents = events.slice(startIndex, endIndex);
+        res.status(200).send({events: respEvents, total: events.length});
     } catch (error) {
 
         res.status(500).json({success: false, message: 'Internal server error.'});

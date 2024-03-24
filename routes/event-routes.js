@@ -3,7 +3,7 @@ const {verifyUserToken, IsOrganizerOrClient, IsClient, IsOrganizer} = require(".
 const router = require('express').Router();
 
 router.get('/', verifyUserToken, IsClient, eventController.getAllEvents);//http://localhost:3001/api/events?page=2&size=2
-router.get('/user/:guestId', verifyUserToken, IsClient, eventController.getAllEventsForGuest);
+router.get('/user', verifyUserToken, IsClient, eventController.getAllEventsForGuest);
 
 router.post('/', verifyUserToken, IsOrganizer, eventController.addEvent);
 router.patch('/:id', verifyUserToken, IsOrganizer, eventController.updateEvent)
