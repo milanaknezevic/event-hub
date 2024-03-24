@@ -3,6 +3,7 @@ const Event = require("../models/event");
 const User = require("../models/user");
 const {USER_ROLES, USER_STATUS} = require("../models/enums");
 const Sequelize = require("sequelize");
+const {EventImage} = require("../models");
 
 const createInvitation = async (req, res) => {
     try {
@@ -40,7 +41,8 @@ const createInvitation = async (req, res) => {
 }
 const acceptInvitationGuest = async (req, res) => {
     try {
-        let eventId = req.params
+        let {eventId} = req.params
+        // let numericEventId = parseInt(eventId, 10);
         let accept = req.query.accept;
         const existingInvitation = await Invitation.findOne({
             where: {
@@ -52,12 +54,12 @@ const acceptInvitationGuest = async (req, res) => {
         });
         if (existingInvitation) {
             switch (accept) {
-                case true:
+                case "true":
                     existingInvitation.statusGuest = true;
                     await existingInvitation.save();
                     res.status(200).json({success: true, message: 'Invitation successfully accepted.'})
                     break;
-                case false:
+                case "false":
                     await existingInvitation.destroy();
                     res.status(204).json({success: true, message: 'Invitation successfully declined and deleted.'});
                     break;
@@ -70,6 +72,7 @@ const acceptInvitationGuest = async (req, res) => {
         }
 
     } catch (error) {
+        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -182,22 +185,53 @@ const getAllUnacceptedInvitationsForOrganizer = async (req, res) => {
 const getAllUnacceptedInvitationsForClient = async (req, res) => {
     try {
         let clientId = req.user.id
-        const invitations = await Invitation.findAll({
-            where: {
-                statusCreator: true,
-                statusGuest: false,
-                user_id: clientId
-            },
-            include: [{
-                model: Event,
-                as: 'event',
-                where: {
-                    startTime: {[Sequelize.Op.gt]: new Date()}
-                }
-            }],
-            attributes: {exclude: ['event_id']},
-        });
-        res.status(200).send(invitations)
+        const {page = 1, size = 10, status} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex = page * size;
+
+        let statusOption = parseInt(status, 10);
+        let invitations;
+
+        switch (statusOption)
+        {
+            case 0: //received invitations tj statuc guest false, status creator true
+                invitations = await Invitation.findAll({
+                    where: {
+                        statusCreator: true,
+                        statusGuest: false,
+                        user_id: clientId
+                    },
+                    include: [{
+                        model: Event,
+                        as: 'event',
+                        include: [
+                            { model: EventImage, as: 'eventImages' }
+                        ]
+                    }],
+                });
+                break;
+            case 1:
+                invitations = await Invitation.findAll({
+                    where: {
+                        statusCreator: false,
+                        statusGuest: true,
+                        user_id: clientId
+                    },
+                    include: [{
+                        model: Event,
+                        as: 'event',
+                        include: [
+                            { model: EventImage, as: 'eventImages' }
+                        ]
+                    }],
+                });
+                break;
+            default:
+                break;
+        }
+
+        const respInvitations = invitations.slice(startIndex, endIndex);
+        res.status(200).send({invitations: respInvitations, total: invitations.length});
 
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
@@ -303,7 +337,19 @@ const organizerUnsendInvitation = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+
+const clientUnsendInvitation = async (req, res) => {
+    try {
+        const {eventId} = req.params;
+        await Invitation.destroy({where: {event_id: eventId, user_id: req.user.id}});
+        res.status(200).send('Invitation is deleted!');
+    } catch (error) {
+        console.log("error ", error);
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
 module.exports = {
+    clientUnsendInvitation,
     organizerUnsendInvitation,
     createInvitation,
     getAllUnacceptedInvitationsForOrganizer,

@@ -7,13 +7,13 @@ const router = require('express').Router();
 // router.get('/:id', verifyUserToken, IsSupport, ticketController.getTicketsByAdminId);//api/tickets/id admina?replied=false
 router.get('/:id', verifyUserToken, IsSupport, ticketController.getTicketById)
 router.post('/', verifyUserToken, IsOrganizerOrClient, ticketController.createTicket)
-router.get('user/:id', verifyUserToken, IsClient, ticketController.getTicketsByUserId);//api/tickets/user/id usera?replied=0
+router.get('/my/tickets', verifyUserToken, IsOrganizerOrClient, ticketController.getTicketsByUserId);//api/tickets/user/id usera?replied=0
 // admin vidi sve otvorene tikete
 router.get('/', verifyUserToken, IsSupport, ticketController.getAllTickets);
 router.put('/support/:ticketId', verifyUserToken, IsSupport, ticketController.assignToTicket)
 router.put('/reply/:ticketId', verifyUserToken, IsSupport, ticketController.replyToTicket)
 
-router.get('/ticket/status', verifyUserToken, IsSupport, ticketController.getTicketStatus)
-router.get('/ticket/priority', verifyUserToken, IsSupport, ticketController.getTicketPriority)
+router.get('/ticket/status', verifyUserToken, ticketController.getTicketStatus)
+router.get('/ticket/priority', verifyUserToken, ticketController.getTicketPriority)
 
 module.exports = router;

@@ -52,7 +52,7 @@ const getAllTickets = async (req, res) => {
 const getTicketPriority = async (req, res) => {
     try {
         const ticketPriorityArray = Object.keys(PRIORITY)
-            .map(key => ({key: PRIORITY[key], value: key}))
+            .map(key => ({id: PRIORITY[key], name: key}))
 
         res.json(ticketPriorityArray);
     } catch (error) {
@@ -125,26 +125,31 @@ const getTicketById = async (req, res) => {
 
 const getTicketsByUserId = async (req, res) => {
     try {
-        let id = req.params.id;
-        let tickets;
-        switch (req.query.replied) {
-            case 1: //procitano
-                tickets = await Ticket.findAll({where: {client_id: id, status: 1}})
-                break;
-            case 2://nije procitano tj in progress
-                tickets = await Ticket.findAll({where: {client_id: id, status: 2}})
-                break;
-            default: //open tiketi
-                tickets = await Ticket.findAll({where: {client_id: id, status: 0}})
-                break;
+        const {page = 1, size = 10, status, priority} = req.query;
+        const startIndex = (page - 1) * size;
+        const endIndex = page * size;
+        let id = req.user.id;
+
+        let tickets = await Ticket.findAll({
+            where: {client_id: id},
+            order: [['status', 'ASC']],
+        })
+        if (status !== '') {
+            tickets = tickets.filter(e => e.dataValues.status == status);
         }
 
-        const mappedTickets = tickets.map(ticket => ({
+        if (priority !== '') {
+            tickets = tickets.filter(e => e.dataValues.priority == priority);
+        }
+        const respTickets = tickets.slice(startIndex, endIndex);
+
+        const mappedTickets = respTickets.map(ticket => ({
             ...ticket.dataValues,
-            priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === newTicket.dataValues.priority),
-            status: Object.keys(STATUS).find(key => STATUS[key] === newTicket.dataValues.status),
+            priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === ticket.dataValues.priority),
+            status: Object.keys(STATUS).find(key => STATUS[key] === ticket.dataValues.status),
         }));
-        res.status(200).send({mappedTickets});
+
+        res.status(200).send({tickets: mappedTickets, total: tickets.length});
     } catch (error) {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
@@ -154,7 +159,8 @@ const createTicket = async (req, res) => {
     try {
         const ticketData = {
             question: req.body.question,
-            client_id: req.body.client_id,
+            priority: req.body.priority ? req.body.priority : 0,
+            client_id: req.user.id,
             creationDate: new Date(),
         };
 
