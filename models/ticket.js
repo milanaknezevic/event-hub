@@ -43,6 +43,11 @@ const Ticket = sequelize.define("Ticket", {
         type: Sequelize.DATE,
         allowNull: false,
     },
+    read: {
+        type: Sequelize.SMALLINT,
+        allowNull: false,
+        defaultValue: 0 // 0 je false tj nije procitano, 1 procitano , 2 pregledao klijent/organizer
+    },
 }, {
     tableName: 'Ticket',
 });

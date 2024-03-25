@@ -16,4 +16,8 @@ router.put('/reply/:ticketId', verifyUserToken, IsSupport, ticketController.repl
 router.get('/ticket/status', verifyUserToken, ticketController.getTicketStatus)
 router.get('/ticket/priority', verifyUserToken, ticketController.getTicketPriority)
 
+router.get('/support/notifications', verifyUserToken,IsSupport, ticketController.getTicketsNotification)
+router.get('/organizer/notifications', verifyUserToken,IsOrganizerOrClient, ticketController.getOrganizerTicketsNotification)
+router.put('/update/notifications/:id', verifyUserToken,IsOrganizerOrClient, ticketController.updateClosedTicketNotification)
+
 module.exports = router;

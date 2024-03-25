@@ -2,6 +2,7 @@ const Ticket = require("../models/ticket");
 const {PRIORITY, STATUS, USER_ROLES, USER_STATUS} = require("../models/enums");
 const User = require("../models/user");
 const {Sequelize} = require("sequelize");
+const Event = require("../models/event");
 const getAllTickets = async (req, res) => {
     try {
         const {page = 1, size = 10, status, priority} = req.query;
@@ -59,6 +60,40 @@ const getTicketPriority = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
+const getTicketsNotification = async (req, res) => {
+    try {
+        const tickets = await Ticket.findAll({
+            where: {read: 0},
+            attributes: ['id']
+        })
+        res.json({ticketNotification: tickets});
+    } catch (error) {
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+}
+const getOrganizerTicketsNotification = async (req, res) => {
+    try {
+        const tickets = await Ticket.findAll({
+            where: {read: 1, client_id: req.user.id, status: 2},
+            attributes: ['id']
+        });
+        res.json({ticketNotification: tickets});
+    } catch (error) {
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
+const updateClosedTicketNotification = async (req, res) => {
+    try {
+        const id = req.params.id
+
+        await Ticket.update({read: 2}, {where: {id: id, client_id: req.user.id, status: 2, read: 1}});
+
+        res.status(200).json({})
+    } catch (error) {
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+};
+
 const getTicketStatus = async (req, res) => {
     try {
         const ticketStatusArray = Object.keys(STATUS)
@@ -96,6 +131,7 @@ const getTicketsByAdminId = async (req, res) => {
 const getTicketById = async (req, res) => {
     try {
         let id = req.params.id
+
         let ticket = await Ticket.findOne({
             where: {id: id},
             include: [
@@ -110,6 +146,9 @@ const getTicketById = async (req, res) => {
             ],
             attributes: {exclude: ['client_id', 'support_id']},
         });
+        if (!ticket.dataValues.read) {
+            await Ticket.update({read: 1}, {where: {id: id}});
+        }
         const mappedTicket = {
             ...ticket.dataValues,
             priority: Object.keys(PRIORITY).find(key => PRIORITY[key] === ticket.dataValues.priority),
@@ -235,6 +274,9 @@ const replyToTicket = async (req, res) => {
 
 module.exports = {
     createTicket,
+    getTicketsNotification,
+    getOrganizerTicketsNotification,
+    updateClosedTicketNotification,
     getAllTickets,
     getTicketsByAdminId,
     getTicketsByUserId,

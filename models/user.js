@@ -57,11 +57,6 @@ const User = sequelize.define("User", {
         type: Sequelize.STRING(1024),
         allowNull: true,
     },
-    read:{
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false
-    },
 
 }, {
     tableName: 'User',
