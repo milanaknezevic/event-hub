@@ -1,16 +1,14 @@
 const User = require("../models/user");
 const Event = require("../models/event");
 const Invitation = require("../models/invitation");
-const {Sequelize} = require("sequelize");
+const {Sequelize, where} = require("sequelize");
 const {USER_ROLES, USER_STATUS} = require("../models/enums");
 const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
-const EventType = require("../models/eventType");
 const EventImage = require("../models/eventImage");
 const fs = require('fs');
 const path = require('path');
-const {v4: uuidv4} = require('uuid');
-const Comment = require("../models/comment");
+const cron = require('node-cron');
 
 
 const addUser = async (req, res) => {
@@ -737,6 +735,31 @@ const changePassword = async (req, res) => {
         res.status(500).json({message: 'Server error'});
     }
 };
+
+const changeEventStatus =async () => {
+    const events = await Event.findAll()
+    const currentTime = new Date();
+    for(let event of events)
+    {
+        if(event.dataValues.status === 0)
+        {
+            if (event.dataValues.startTime && new Date(event.dataValues.startTime) >= currentTime) {
+                await Event.update({status: 1}, {where: {id: event.dataValues.id}});
+            }
+        }
+        else if(event.dataValues.status === 1)
+        {
+            if (event.dataValues.endTime && new Date(event.dataValues.endTime) >= currentTime) {
+                await Event.update({status: 2}, {where: {id: event.dataValues.id}});
+            }
+        }
+
+    }
+}
+
+cron.schedule('0 */1 * * *', async () => {
+    await changeEventStatus();
+});
 
 module.exports = {
     changePassword,

@@ -5,6 +5,7 @@ const {USER_ROLES, USER_STATUS} = require("../models/enums");
 const Sequelize = require("sequelize");
 const {EventImage} = require("../models");
 const Ticket = require("../models/ticket");
+const cron = require("node-cron");
 
 const createInvitation = async (req, res) => {
     try {
@@ -381,6 +382,33 @@ const getClientNotifications = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
+
+
+
+const deleteUnacceptedInvitations =async () => {
+    const invitations = await Invitation.findAll({
+        where: Sequelize.or(
+            { statusCreator: true, statusGuest: false },
+            { statusCreator: false, statusGuest: true }
+        ),
+        include: [{
+            model: Event,
+            as: 'event',
+            where:{ status:1}
+        }],
+    });
+    for(const  invitation of invitations)
+    {
+        await Invitation.destroy({where: {event_id: invitation.dataValues.event_id, user_id:  invitation.dataValues.user_id}});
+
+    }
+
+
+}
+
+cron.schedule('0 */1 * * *', async () => {
+    await deleteUnacceptedInvitations();
+});
 module.exports = {
     getClientNotifications,
     clientUnsendInvitation,
