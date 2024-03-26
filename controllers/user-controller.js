@@ -420,11 +420,11 @@ const getAllOrganizerEvents = async (req, res) => {
             ...dateFilter,
         };
 
-        if (locationId !== "") {
+        if (locationId) {
             additionalFilters.location_id = parseInt(locationId);
         }
 
-        if (eventTypeId !== "") {
+        if (eventTypeId) {
             additionalFilters.eventType_id = parseInt(eventTypeId);
         }
 
@@ -444,7 +444,13 @@ const getAllOrganizerEvents = async (req, res) => {
             ],
         });
 
-        const respEvents = events.slice(startIndex, endIndex);
+        let respEvents = events.slice(startIndex, endIndex);
+
+        for (let event of respEvents) {
+            event.dataValues.invitations = await Invitation.findAll({
+                where: {read: 0, statusCreator: false, statusGuest: true, event_id: event.dataValues.id},
+            });
+        }
 
         res.status(200).send({events: respEvents, total: events.length});
 
@@ -718,8 +724,8 @@ const changePassword = async (req, res) => {
 
         }
         const hash = await bcrypt.hash(confirm_password, 10);
-        const updatedProperties={
-            password:hash
+        const updatedProperties = {
+            password: hash
         }
         await User.update(updatedProperties, {
             where: {id: id}

@@ -134,11 +134,11 @@ const getAllEvents = async (req, res) => {
             ...dateFilter,
         };
 
-        if (locationId !== "") {
+        if (locationId) {
             additionalFilters.location_id = parseInt(locationId);
         }
 
-        if (eventTypeId !== "") {
+        if (eventTypeId) {
             additionalFilters.eventType_id = parseInt(eventTypeId);
         }
 
@@ -374,11 +374,11 @@ const getAllEventsForGuest = async (req, res) => {
             ...dateFilter,
         };
 
-        if (locationId !== "") {
+        if (locationId) {
             additionalFilters.location_id = parseInt(locationId);
         }
 
-        if (eventTypeId !== "") {
+        if (eventTypeId) {
             additionalFilters.eventType_id = parseInt(eventTypeId);
         }
 

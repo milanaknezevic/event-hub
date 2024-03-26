@@ -4,6 +4,7 @@ const User = require("../models/user");
 const {USER_ROLES, USER_STATUS} = require("../models/enums");
 const Sequelize = require("sequelize");
 const {EventImage} = require("../models");
+const Ticket = require("../models/ticket");
 
 const createInvitation = async (req, res) => {
     try {
@@ -192,8 +193,7 @@ const getAllUnacceptedInvitationsForClient = async (req, res) => {
         let statusOption = parseInt(status, 10);
         let invitations;
 
-        switch (statusOption)
-        {
+        switch (statusOption) {
             case 0: //received invitations tj statuc guest false, status creator true
                 invitations = await Invitation.findAll({
                     where: {
@@ -205,7 +205,7 @@ const getAllUnacceptedInvitationsForClient = async (req, res) => {
                         model: Event,
                         as: 'event',
                         include: [
-                            { model: EventImage, as: 'eventImages' }
+                            {model: EventImage, as: 'eventImages'}
                         ]
                     }],
                 });
@@ -221,7 +221,7 @@ const getAllUnacceptedInvitationsForClient = async (req, res) => {
                         model: Event,
                         as: 'event',
                         include: [
-                            { model: EventImage, as: 'eventImages' }
+                            {model: EventImage, as: 'eventImages'}
                         ]
                     }],
                 });
@@ -231,6 +231,17 @@ const getAllUnacceptedInvitationsForClient = async (req, res) => {
         }
 
         const respInvitations = invitations.slice(startIndex, endIndex);
+        for (const invitation of respInvitations) {
+            if (invitation.dataValues.read === 0) {
+                await Invitation.update({read: 1}, {
+                    where: {
+                        user_id: invitation.dataValues.user_id,
+                        event_id: invitation.dataValues.event_id
+                    }
+                });
+            }
+        }
+
         res.status(200).send({invitations: respInvitations, total: invitations.length});
 
     } catch (error) {
@@ -277,7 +288,6 @@ const getAllUnacceptedInvitations = async (req, res) => {
         const allUsersCombined = [...users, ...allUsersWithStatus];
         res.status(200).send({clients: allUsersCombined});
     } catch (error) {
-        console.log("error neki ludilo ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -307,6 +317,16 @@ const getInvitationsByEventId = async (req, res) => {
             });
 
             const respInvitations = invitations.slice(startIndex, endIndex);
+            for (const invitation of respInvitations) {
+                if (invitation.dataValues.read === 0) {
+                    await Invitation.update({read: 1}, {
+                        where: {
+                            event_id: eventId
+                        }
+                    });
+                }
+            }
+
 
             const mappedInvitations = respInvitations.map(invitation => ({
                 ...invitation.dataValues,
@@ -317,7 +337,7 @@ const getInvitationsByEventId = async (req, res) => {
                 },
             }));
 
-            res.status(200).send({invitations: mappedInvitations,total: invitations.length})
+            res.status(200).send({invitations: mappedInvitations, total: invitations.length})
         } else {
             res.status(404).json({success: false, message: 'Invitation not found.'});
         }
@@ -348,7 +368,21 @@ const clientUnsendInvitation = async (req, res) => {
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
+const getClientNotifications = async (req, res) => {
+    try {
+        const invitations = await Invitation.findAll({
+            where: {read: 0, statusCreator: true, statusGuest: false, user_id: req.user.id},
+
+        })
+        res.json({invitationNotification: invitations});
+
+    } catch (error) {
+        console.log("error neki brate ", error)
+        res.status(500).json({success: false, message: 'Internal server error.'});
+    }
+}
 module.exports = {
+    getClientNotifications,
     clientUnsendInvitation,
     organizerUnsendInvitation,
     createInvitation,

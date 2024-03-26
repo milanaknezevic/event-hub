@@ -1,6 +1,6 @@
 const invitationController = require('../controllers/invitation-controller')
-const {verifyUserToken, IsClient, IsOrganizer, IsOrganizerOrClient} = require("../middleware/auth");
-const eventController = require("../controllers/event-controller");
+const {verifyUserToken, IsClient, IsOrganizer, IsOrganizerOrClient, IsSupport} = require("../middleware/auth");
+const ticketController = require("../controllers/ticket-controller");
 const router = require('express').Router()
 
 router.post('/:eventId/:userId', verifyUserToken, IsOrganizerOrClient, invitationController.createInvitation) //pozivam korisnika a i korisnik se prijavljuje
@@ -26,8 +26,9 @@ router.get('/',verifyUserToken,IsClient, invitationController.getAllUnacceptedIn
 
 router.get('/organizer/active/:eventId',verifyUserToken,IsOrganizer, invitationController.getAllUnacceptedInvitations)
 
+router.get('/client/invitations/notifications', verifyUserToken,IsClient, invitationController.getClientNotifications)
 
-//nepotrebna ruta
-router.get('/', invitationController.getAllInvitation)
+// //nepotrebna ruta
+// router.get('/', invitationController.getAllInvitation)
 
 module.exports = router

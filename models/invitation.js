@@ -21,9 +21,9 @@ const Invitation = sequelize.define("Invitation", {
         allowNull: false,
     },
     read:{
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false
+        type: Sequelize.SMALLINT,
+        allowNull: true,
+        defaultValue: 0
     },
 }, {
     tableName: 'Invitation',

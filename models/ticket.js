@@ -45,7 +45,7 @@ const Ticket = sequelize.define("Ticket", {
     },
     read: {
         type: Sequelize.SMALLINT,
-        allowNull: false,
+        allowNull: true,
         defaultValue: 0 // 0 je false tj nije procitano, 1 procitano , 2 pregledao klijent/organizer
     },
 }, {
