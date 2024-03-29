@@ -53,7 +53,6 @@ const addEvent = async (req, res) => {
             eventType: newEvent
         });
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -94,7 +93,6 @@ const getEventById = async (req, res) => {
         event.dataValues.endTime = moment(event.dataValues.endTime).format('DD.MM.YYYY. HH:mm');
         res.status(200).send(event);
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -173,7 +171,6 @@ const getAllEvents = async (req, res) => {
         res.status(200).send({events: respEvents, total: events.length});
 
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -231,7 +228,6 @@ const deleteEvent = async (req, res) => {
         await Event.update({status: 3}, {where: {id: id}});
         res.status(200).send('Event is deleted!');
     } catch (error) {
-        console.log("error ", error);
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -278,7 +274,6 @@ const updateEvent = async (req, res) => {
 
         res.status(200).json({success: true, message: 'Event properties updated successfully.', user: existingEvent});
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };

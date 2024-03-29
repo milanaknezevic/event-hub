@@ -157,7 +157,6 @@ const getTicketById = async (req, res) => {
         res.status(200).send(mappedTicket)
 
     } catch (error) {
-        console.log("greska ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }

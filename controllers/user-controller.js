@@ -65,7 +65,6 @@ const addUser = async (req, res) => {
             mappedUser
         });
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -73,7 +72,7 @@ const getAllClients = async (req, res) => {
     try {
         let whereClause = {
             role: {
-                [Sequelize.Op.not]: USER_ROLES.CLIENT
+                [Sequelize.Op.eq]: USER_ROLES.CLIENT
             }
         };
         let users = await User.findAll({
@@ -89,7 +88,6 @@ const getAllClients = async (req, res) => {
 
         res.status(200).send({clients: mappedUsers});
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -265,7 +263,6 @@ const updateUser = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error jeee ", error)
         res.status(500).json({
             success: false,
             message: 'Internal Server Error',
@@ -354,7 +351,6 @@ const updateMyProfile = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error jeee ", error)
         res.status(500).json({
             success: false,
             message: 'Internal Server Error',
@@ -517,7 +513,6 @@ const getAllEventGuests = async (req, res) => {
 
         return res.status(200).json({invitations: mappedInvitations, total: invitations.length});
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({message: 'Internal server error.'});
     }
 };
@@ -576,7 +571,6 @@ const registerUser = async (req, res) => {
             mappedUser
         });
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -692,7 +686,6 @@ const notInvitedUsers = async (req, res) => {
         res.status(200).send({users: mappedUsers, total: users.length});
 
     } catch (error) {
-        console.error(error);
         res.status(500).json({message: 'Server error'});
     }
 };
@@ -731,7 +724,6 @@ const changePassword = async (req, res) => {
         res.status(200).json({success: true});
 
     } catch (error) {
-        console.error(error);
         res.status(500).json({message: 'Server error'});
     }
 };

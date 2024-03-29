@@ -17,7 +17,6 @@ const addComment = async (req, res) => {
             message: 'Comment added succesfuly',
         });
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -50,7 +49,6 @@ const replyComment = async (req, res) => {
             message: 'Comment updated succesfuly',
         });
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }

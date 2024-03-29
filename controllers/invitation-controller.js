@@ -37,7 +37,6 @@ const createInvitation = async (req, res) => {
             invitation: newInvitation
         });
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -74,7 +73,6 @@ const acceptInvitationGuest = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
@@ -264,6 +262,7 @@ const getAllUnacceptedInvitations = async (req, res) => {
             include: [{
                 model: User,
                 as: 'invitedUser',
+                where:{ role:2}
             }],
             attributes: {exclude: ['event_id']},
         });
@@ -272,13 +271,18 @@ const getAllUnacceptedInvitations = async (req, res) => {
             ...value.dataValues.invitedUser.dataValues,
             invitationStatus: true
         }));
-        const allInivitations = await Invitation.findAll({where: {event_id: eventId}});
-        const invitedUserIds = allInivitations.map(invitation => invitation.user_id);
+        const allInvitations = await Invitation.findAll({
+            where: { event_id: eventId },
+            include: [{ model: User, as: 'invitedUser', where: { role: 2 } }]
+        });
+
+        const invitedUserIds = allInvitations.map(invitation => invitation.user_id);
         const allUsers = await User.findAll({
             where: {
                 id: {
                     [Sequelize.Op.notIn]: invitedUserIds
-                }
+                },
+                role: 2
             }
         });
 //ako je false nije nikad ni slao pozivnicu, pa je moze psolati
@@ -354,7 +358,6 @@ const organizerUnsendInvitation = async (req, res) => {
         await Invitation.destroy({where: {event_id: eventId, user_id: userId}});
         res.status(200).send('Invitation is deleted!');
     } catch (error) {
-        console.log("error ", error);
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -365,7 +368,6 @@ const clientUnsendInvitation = async (req, res) => {
         await Invitation.destroy({where: {event_id: eventId, user_id: req.user.id}});
         res.status(200).send('Invitation is deleted!');
     } catch (error) {
-        console.log("error ", error);
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 };
@@ -378,7 +380,6 @@ const getClientNotifications = async (req, res) => {
         res.json({invitationNotification: invitations});
 
     } catch (error) {
-        console.log("error neki brate ", error)
         res.status(500).json({success: false, message: 'Internal server error.'});
     }
 }
